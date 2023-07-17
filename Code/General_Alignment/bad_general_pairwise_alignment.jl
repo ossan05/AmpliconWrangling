@@ -16,12 +16,13 @@ end
 function dp_alignment(A::String, B::String, vgaps::Vector{Gap}, hgaps::Vector{Gap}, moves::Vector{Move}, frameshift_score::Number, mismatch_score::Number)
     n, m = length(A), length(B)
 
+    # initialize matrices
     dp_matrix = fill(typemax(Float64), n + 1, m + 1)
     dp_matrix[1, 1] = .0
     bt_matrix = fill((0, 0), n + 1, m + 1)
     ma_matrix = zeros(Float16, n, m)
 
-
+    # Fill the first row in the dp_matrix
     for i ∈ 2:m + 1, gap ∈ hgaps 
         if gap.move[2] % 3 == 0
             if gap.move[2] < i && dp_matrix[1, i - gap.move[2]] + gap.score < dp_matrix[1, i]
@@ -36,6 +37,7 @@ function dp_alignment(A::String, B::String, vgaps::Vector{Gap}, hgaps::Vector{Ga
         end
     end
 
+    # Fill the first column in the dp_matrix
     for i ∈ 2:m + 1, gap ∈ vgaps 
         if gap.move[1] % 3 == 0
             if gap.move[1] < i && dp_matrix[i - gap.move[1], 1] + gap.score < dp_matrix[i, 1]
@@ -53,17 +55,31 @@ function dp_alignment(A::String, B::String, vgaps::Vector{Gap}, hgaps::Vector{Ga
     for i ∈ 2:n + 1
         for j ∈ 2:m + 1
 
+            # Store mismatch score in dp sized mismatch matrix
             if A[i - 1] != B[j - 1] 
                 ma_matrix[1, j - 1] = mismatch_score # some other index for the row
             end
 
+            # the minimum move is stored in an object and changed when a better move is found
+            # constructed with the struct "Move"
             min_move = Move((0, 0), Inf)
 
+            # calculate the best move by iterating over the moves 
             for k ∈ moves
-                if k.move[1] % 3 == 0 || k.move[2] % 3 == 0
+
+                # k.move is a tuple e.g. (0, 3)
+
+                # Checks a move is a multiple of three
+                if (k.move[1] > 2 && k.move[1] % 3 == 0) || (k.move[2] > 2 && k.move[2] % 3 == 0 )
+
+                    # if the move is a gap:
                     if k.move[1] != k.move[2] && k.move[1] < i && k.move[2] < j && dp_matrix[i - k.move[1], j - k.move[2]] + k.score < min_move.score 
                         min_move = Move(k.move, dp_matrix[i - k.move[1], j - k.move[2]] + k.score)
+
+                    # if the move is diagonal
                     elseif k.move[1] < i && k.move[2] < j
+
+                        # the sum of the mismatch scores on the diagonal
                         s = 0
                         for l ∈ i - k.move[1]:i - 1
                             s += ma_matrix[l, l]
@@ -73,15 +89,19 @@ function dp_alignment(A::String, B::String, vgaps::Vector{Gap}, hgaps::Vector{Ga
                             min_move = Move(k.move, dp_matrix[i - k.move[1], j - k.move[2]] + k.score + s)
                         end
                     end
-                else
+                else # when the move is not a multiple of three
+
+                    # check if it's a gap
                     if k.move[1] != k.move[2] && k.move[1] < i && k.move[2] < j && dp_matrix[i - k.move[1], j - k.move[2]] + k.score + frameshift_score < min_move.score 
                         min_move = Move(k.move, dp_matrix[i - k.move[1], j - k.move[2]] + k.score + frameshift_score)
+                    # if it's a match (diagonal move)
                     elseif k.move[1] < i && k.move[2] < j
                         s = 0
                         for l ∈ i - k.move[1]:i - 1
                             s += ma_matrix[l, l]
                         end
 
+                        # check if the diagonal move is less than the current best move
                         if dp_matrix[i - k.move[1], j - k.move[2]] + k.score + s + frameshift_score < min_move.score 
                             min_move = Move(k.move, dp_matrix[i - k.move[1], j - k.move[2]] + k.score + s + frameshift_score)
                         end
@@ -89,54 +109,15 @@ function dp_alignment(A::String, B::String, vgaps::Vector{Gap}, hgaps::Vector{Ga
                 end
             end
 
+            # put the new minimum score in the dp_matrix
             dp_matrix[i, j] = min_move.score
+
+            # and the move in the backtracking matrix
             bt_matrix[i, j] = min_move.move
-
-
-            # # Move left
-            # if vgap.move[1] < i
-            #     if vgap.move[1] > cyc[2] && dp_matrix[cyc[2] - vgap.move[1] + , j] + vgap.score < dp_matrix[cyc[2], j]
-            #         dp_matrix[cyc[2], j] = dp_matrix[cyc[2] - vgap.move[1] + , j] + vgap.score
-            #         bt_matrix[i, j] = (i - vgap.move[1], j)
-            #     elseif vgap.move[1] < cyc[2] && dp_matrix[cyc[2] - vgap.move[1], j] + vgap.score < dp_matrix[cyc[2], j]
-            #         dp_matrix[cyc[2], j] = dp_matrix[cyc[2] - vgap.move[1], j] + vgap.score
-            #         bt_matrix[i, j] = (i - vgap.move[1], j)
-            #     end
-            # end
-
-            # # Move right
-            # for hgap ∈ hgaps
-            #     if hgap.move[2] < j && dp_matrix[cyc[2], j  - hgap.move[2]] + hgap.score < dp_matrix[cyc[2], j]
-            #         dp_matrix[cyc[2], j] = dp_matrix[cyc[2], j - hgap.move[2]] + hgap.score
-            #         bt_matrix[i, j] = (i, j - hgap.move[2])
-            #     end
-            # end
-
-            # # Move diagonaly
-            # for match ∈ matches
-            #     if match.move[1] < i && match.move[2] < j 
-            #         if match.move[1] > cyc[2]
-            #             if match.move[1] > cyc[2] && dp_matrix[cyc[2] - match.move[1] + , j - match.move[2]] + match.score + ma_matrix[cyc[1], j - 1] < dp_matrix[cyc[2], j]
-            #                 dp_matrix[cyc[2], j] = dp_matrix[cyc[2] - match.move[1] + , j - match.move[2]] + match.score + ma_matrix[cyc[1], j - 1]
-            #                 bt_matrix[i, j] = (i - match.move[1], j - match.move[2])
-            #             elseif match.move[1] > cyc[2] && dp_matrix[cyc[2] - match.move[1] + , j - match.move[2]] + match.score + ma_matrix[cyc[1], j - 1] < dp_matrix[cyc[2], j]
-            #                 dp_matrix[cyc[2], j] = dp_matrix[cyc[2] - match.move[1], j - match.move[2]] + match.score + ma_matrix[cyc[1], j - 1]
-            #                 bt_matrix[i, j] = (i - match.move[1], j - match.move[2])
-            #             end
-            #         else
-            #             if match.move[1] > cyc[2] && dp_matrix[cyc[2] - match.move[1], j - match.move[2]] + match.score + ma_matrix[cyc[1], j - 1] < dp_matrix[cyc[2], j]
-            #                 dp_matrix[cyc[2], j] = dp_matrix[cyc[2] - match.move[1], j - match.move[2]] + match.score + ma_matrix[cyc[1], j - 1]
-            #                 bt_matrix[i, j] = (i - match.move[1], j - match.move[2])
-            #             elseif match.move[1] > cyc[2] && dp_matrix[cyc[2] - match.move[1], j - match.move[2]] + match.score + ma_matrix[cyc[1], j - 1] < dp_matrix[cyc[2], j]
-            #                 dp_matrix[cyc[2], j] = dp_matrix[cyc[2] - match.move[1], j - match.move[2]] + match.score + ma_matrix[cyc[1], j - 1]
-            #                 bt_matrix[i, j] = (i - match.move[1], j - match.move[2])
-            #             end
-            #         end
-            #     end
-            # end
         end
     end
 
+    # backtracking
     y = m + 1
     x = n + 1
     res_A = ""
@@ -165,10 +146,11 @@ function dp_alignment(A::String, B::String, vgaps::Vector{Gap}, hgaps::Vector{Ga
         y -= bt_matrix[x_prev, y][2]
     end
 
+    # return the resulting strings
     return reverse(res_A), reverse(res_B)
 end
 
-# with affine gap
+# same thing but with affine gap
 function dp_alignment(A::String, B::String, vgaps::Vector{Move}, hgaps::Vector{Move}, moves::Vector{Move}, mismatch_score::Number, affine_gap::Number, frameshift_score::Number)
     n, m = length(A), length(B)
 
@@ -314,20 +296,27 @@ function general_pairwise_aligner(A::String, B::String, match_score::Number, mis
     vgaps = Vector{Move}()
     hgaps = Vector{Move}()
 
+    # fill the vectors with gaps and moves
     for i ∈ 1:2:length(moves_with_penalties)
+
+        # vertical gap
         if moves_with_penalties[i][2] == 0
             push!(vgaps, Move(moves_with_penalties[i], moves_with_penalties[i + 1]))
+
+        # horizontal gap
         elseif moves_with_penalties[i][1] == 0
             push!(hgaps, Move(moves_with_penalties[i], moves_with_penalties[i + 1]))
         end
 
+        # all moves
         push!(moves, Move(moves_with_penalties[i], moves_with_penalties[i + 1]))
     end
     
-    return dp_alignment(A, B, vgaps, hgaps, moves, mismatch_score) 
+    # make the alignment
+    return dp_alignment(A, B, vgaps, hgaps, moves, frameshift_score, mismatch_score) 
 end
 
-# With affine gap
+# Same thing with affine gap
 function general_pairwise_aligner(A::String, B::String, match_score::Number, mismatch_score::Number, moves_with_penalties::Tuple, affine_gap::Number) 
     # match/mismatch scores between ACGT and ACGT
     match_matrix = zeros(4, 4)
