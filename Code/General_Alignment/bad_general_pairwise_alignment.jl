@@ -12,7 +12,7 @@ struct Gap
     score::Number
 end
 
-# w/o affine gap
+# dp_alignment is the needleman-wunsch algorithm
 function dp_alignment(A::String, B::String, vgaps::Vector{Gap}, hgaps::Vector{Gap}, moves::Vector{Move}, frameshift_score::Number, mismatch_score::Number)
     n, m = length(A), length(B)
 
@@ -168,6 +168,7 @@ function dp_alignment(A::String, B::String, vgaps::Vector{Gap}, hgaps::Vector{Ga
     return reverse(res_A), reverse(res_B)
 end
 
+# with affine gap
 function dp_alignment(A::String, B::String, vgaps::Vector{Move}, hgaps::Vector{Move}, moves::Vector{Move}, mismatch_score::Number, affine_gap::Number, frameshift_score::Number)
     n, m = length(A), length(B)
 
@@ -291,11 +292,13 @@ function dp_alignment(A::String, B::String, vgaps::Vector{Move}, hgaps::Vector{M
     return reverse(res_A), reverse(res_B)
 end
 
-# w/o affine gap
+# general_pairwise_aligner makes a match/mismatch matrix and takes the tuple with the moves and scores, 
+# making them objects of type Move or Gap and puting them into lists 
 function general_pairwise_aligner(A::String, B::String, match_score::Number, mismatch_score::Number, frameshift_score::Number, moves_with_penalties::Tuple) 
     # match/mismatch scores between ACGT and ACGT
     match_matrix = zeros(4, 4)
 
+    # this is when every mismatch between nucletides have the same penalty 
     for i in 1:4, j in 1:4
         if i == j
             match_matrix[i, j] = match_score
@@ -305,6 +308,8 @@ function general_pairwise_aligner(A::String, B::String, match_score::Number, mis
     end
 
     # sort the moves into gaps 
+    # moves are all the moves
+    # v - vertical, h - horizontal
     moves = Vector{Move}()
     vgaps = Vector{Move}()
     hgaps = Vector{Move}()
@@ -322,7 +327,7 @@ function general_pairwise_aligner(A::String, B::String, match_score::Number, mis
     return dp_alignment(A, B, vgaps, hgaps, moves, mismatch_score) 
 end
 
-
+# With affine gap
 function general_pairwise_aligner(A::String, B::String, match_score::Number, mismatch_score::Number, moves_with_penalties::Tuple, affine_gap::Number) 
     # match/mismatch scores between ACGT and ACGT
     match_matrix = zeros(4, 4)
