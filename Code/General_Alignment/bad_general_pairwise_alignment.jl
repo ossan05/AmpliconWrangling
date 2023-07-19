@@ -259,7 +259,7 @@ function general_pairwise_aligner(A::String, B::String, match_score::Number, mis
                         if A[l] != B[l + j - i]
                             s += mismatch_score
                         end
-                    end 
+                    end
 
                     # asign a new value to the matrix if the move score is lower
                     if dp_matrix[i - k.move[1], j - k.move[2]] + k.score + s < dp_matrix[i, j]
