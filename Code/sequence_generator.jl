@@ -40,3 +40,6 @@ function generate_seq(seq_len::Int)
 
     return seq, join(seq_copy2, "")
 end
+
+A, B = generate_seq(8)
+println(A, "\n", B)

@@ -69,11 +69,11 @@ fs_penalty = 0.5  # 1.4 + 1.2 = 2.6 || 0.5 + 2 * 1.4 = 3.3
 
 ma_penalty = 1
 tri_penalty = 2
-gap_penalty = 1 
+gap_penalty = 1
 aff_penalty = 0.4
 tri_aff = aff_penalty * 3 # affine for tri_penalty (1.2)
 
-function Wunsch(A::String,B::String)
+function wunsch(A::String,B::String)
     n, m = (length(A), length(B))
     dp_matrix = zeros(Float64, n+1, m+1)
     bt_matrix = fill((0, 0), n+1, m+1)
@@ -395,6 +395,6 @@ A, B = generate_seq(16)
 
 # println(A, "\n", B, "\n")
 
-A2, B2 = Wunsch(A, B)
+A2, B2 = wunsch(A, B)
 
 println(A2, "\n", B2)
