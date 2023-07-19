@@ -4,16 +4,16 @@ export general_pairwise_aligner, dp_alignment, Move, Gap
 
 struct Move
     move::Tuple{Int64, Int64}
-    score::Number
+    score::Float64
 end
 
 struct Gap
     move::Int64
-    score::Number
+    score::Float64
 end
 
 # dp_alignment is the needleman-wunsch algorithm
-function dp_alignment(A::String, B::String, vgaps::Vector{Gap}, hgaps::Vector{Gap}, moves::Vector{Move}, frameshift_score::Number, mismatch_score::Number)
+function dp_alignment(A::String, B::String, vgaps::Vector{Gap}, hgaps::Vector{Gap}, moves::Vector{Move}, frameshift_score::Float64, mismatch_score::Float64)
     n, m = length(A), length(B)
 
     # initialize matrices
@@ -154,7 +154,7 @@ end
 
 # general_pairwise_aligner makes a match/mismatch matrix and takes the tuple with the moves and scores, 
 # making them objects of type Move or Gap and puting them into lists 
-function general_pairwise_aligner(A::String, B::String, match_score::Number, mismatch_score::Number, frameshift_score::Number, moves_with_penalties::Tuple) 
+function general_pairwise_aligner(A::String, B::String, match_score::Float64, mismatch_score::Float64, moves::Array{Moves}) 
     # match/mismatch scores between ACGT and ACGT
     match_matrix = zeros(4, 4)
 
@@ -175,28 +175,13 @@ function general_pairwise_aligner(A::String, B::String, match_score::Number, mis
     hgaps = Vector{Gap}()
 
     # fill the vectors with gaps and moves
-    for i ∈ 1:2:length(moves_with_penalties)
-        if moves_with_penalties[i][2] == 0
-            if moves_with_penalties[i][1] % 3 == 0
-                push!(vgaps, Gap(moves_with_penalties[i][1], moves_with_penalties[i + 1]))
-            else
-                # move is not divisable by three, hence the added frameshift_score
-                push!(vgaps, Gap(moves_with_penalties[i][1], moves_with_penalties[i + 1] + frameshift_score))
-            end
-
-        elseif moves_with_penalties[i][1] == 0
-            if moves_with_penalties[i][2] % 3 == 0
-                push!(hgaps, Gap(moves_with_penalties[i][2], moves_with_penalties[i + 1]))
-            else
-                # move is not divisable by three, hence the added frameshift_score                
-                push!(hgaps, Gap(moves_with_penalties[i][2], moves_with_penalties[i + 1] + frameshift_score))
-            end
-        elseif moves_with_penalties[i][1] % 3 == 0
-            push!(matches, Move(moves_with_penalties[i], moves_with_penalties[i + 1]))
+    for i ∈ moves
+        if i.move[2] == 0
+            push!(vgaps, Gap(i.move[1]))
+        elseif i.move[1] == 0
+            push!(hgaps, Gap(i.move[2]))
         else
-            # move is not divisable by three, hence the added frameshift_score
-            push!(matches, Move(moves_with_penalties[i], moves_with_penalties[i + 1] + frameshift_score))
-        end
+            push!(matches, i)
     end
     
     # make the alignment
@@ -359,7 +344,7 @@ function general_pairwise_aligner(A::String, B::String, match_score::Number, mis
 end
 
 # Same thing with affine gap
-function general_pairwise_aligner(A::String, B::String, match_score::Number, mismatch_score::Number, frameshift_score::Number, moves_with_penalties::Tuple, affine_gap::Number) 
+function general_pairwise_aligner(A::String, B::String, match_score::Float64, mismatch_score::Float64, frameshift_score::Float64, moves_with_penalties::Tuple, affine_gap::Float64) 
     # match/mismatch scores between ACGT and ACGT
     match_matrix = zeros(4, 4)
 
