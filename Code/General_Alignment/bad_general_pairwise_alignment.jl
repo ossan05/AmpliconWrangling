@@ -235,7 +235,7 @@ function general_pairwise_aligner(A::String, B::String, match_score::Number, mis
             push!(matches, Move(moves_with_penalties[i], moves_with_penalties[i + 1] + frameshift_score))
         end
     end
-
+    @show matches
 
     # Needleman-Wunsch alignment
 
@@ -321,15 +321,25 @@ function general_pairwise_aligner(A::String, B::String, match_score::Number, mis
                 if k.move[1] < i && k.move[2] < j
                     s = 0
                     for l ∈ i - k.move[1]:i - 1
-                        if A[l] != B[l]
+                        if A[l] != B[l + j - i]
                             s += mismatch_score
                         end
                     end 
+
                     if dp_matrix[i - k.move[1], j - k.move[2]] + k.score + s < dp_matrix[i, j]
                         dp_matrix[i, j] = dp_matrix[i - k.move[1], j - k.move[2]] + k.score + s 
-                        # asign the score to the matrix instead for all of these
+                    end
+                    if i == 9 && j == 12
+                        @show k
+                        @show dp_matrix[i, j]
+                        @show s
                     end
                 end
+            end
+
+            # tt
+            if i == 9 && j == 12
+                @show dp_matrix[i, j]
             end
 
             # fastest move to dp_matrix
@@ -467,7 +477,7 @@ function general_pairwise_aligner(A::String, B::String, match_score::Number, mis
                     # calculate score of mismatches
                     s = 0
                     for i ∈ x - k.move[1]:x - 1
-                        if A[i] != B[i]
+                        if A[i] != B[i + y - x]
                             s += mismatch_score
                         end
                     end
