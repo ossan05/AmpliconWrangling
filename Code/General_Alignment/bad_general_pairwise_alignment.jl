@@ -13,7 +13,7 @@ struct Gap
 end
 
 # match and mismatch matrix
-function general_pairwise_aligner(A::String, B::String, match_score::Float64, mismatch_score::Float64, moves::Array{Moves}) 
+function general_pairwise_aligner(A::String, B::String, match_score::Float64, mismatch_score::Float64, moves::Array{Move}) 
     
     match_score_matrix = zeros(4, 4)
 
@@ -30,7 +30,7 @@ end
 
 # general_pairwise_aligner makes a match/mismatch matrix and takes the tuple with the moves and scores, 
 # making them objects of type Move or Gap and puting them into lists 
-function general_pairwise_aligner(A::String, B::String, match_score_matrix::Array{Float64, 2}, moves::Array{Moves}) 
+function general_pairwise_aligner(A::String, B::String, match_score_matrix::Array{Float64, 2}, moves::Array{Move}) 
     # sort the moves into gaps
     # moves are all the moves
     # v - vertical, h - horizontal
@@ -205,7 +205,7 @@ function general_pairwise_aligner(A::String, B::String, match_score_matrix::Arra
 end
 
 # Another method for affine gap penalties
-function general_pairwise_aligner(A::String, B::String, match_score::Float64, mismatch_score::Float64, moves::Array{Moves}, affine_gap::Float64) 
+function general_pairwise_aligner(A::String, B::String, match_score::Float64, mismatch_score::Float64, moves::Array{Move}, affine_gap::Float64) 
     
     match_score_matrix = zeros(4, 4)
 
@@ -219,7 +219,7 @@ function general_pairwise_aligner(A::String, B::String, match_score::Float64, mi
     end
     general_pairwise_aligner(A, B, match_score_matrix, moves, affine_gap) 
 end
-function general_pairwise_aligner(A::String, B::String, match_score_matrix::Array{Float64, 2}, moves::Array{Moves}, affine_gap::Float64) 
+function general_pairwise_aligner(A::String, B::String, match_score_matrix::Array{Float64, 2}, moves::Array{Move}, affine_gap::Float64) 
 
     # sort the moves into gaps 
     matches = Vector{Move}()
@@ -474,4 +474,4 @@ end
 
 end
 
-# general_pairwise_aligner("TTCGACTG", "TACGACGACTG", 0, 0.5, 1, ((1, 1), 0, (1, 0), 1, (0, 1), 1, (3, 3), 0, (3, 0), 2, (0, 3), 2), 0.5)
+# general_pairwise_aligner("TTCGACTG", "TACGACGACTG", .0, 0.5, [Move((1, 1), 0), Move((1, 0), 1), Move((0, 1), 1), Move((3, 3), 0), Move((3, 0), 2), Move((0, 3), 2)], 0.5)
