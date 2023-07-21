@@ -13,8 +13,9 @@ struct Gap
     score::Float64
 end
 
-function initiate(seq1::String, seq2::String)
+function initiate(seq1::LongDNA{2}, seq2::LongDNA{2})
     general_pairwise_aligner(seq1, seq2, .0, 0.5, [Move((1, 1), 0), Move((1, 0), 1), Move((0, 1), 1), Move((3, 3), 0), Move((3, 0), 2), Move((0, 3), 2)], 0.5)
+
 end
 function toInt(x::NucleicAcid)
     trailing_zeros(reinterpret(UInt8,x))+1

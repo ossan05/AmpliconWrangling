@@ -1,45 +1,89 @@
+using BioSequences
+
 function generate_seq(seq_len::Int)
-    dna = "ACGT"
-    seq = ""
+    seq = dna""
+    dna = dna"ACGT"
 
     for i in 1:seq_len
-        seq *= rand(dna)
+        push!(seq, dna[rand(1:4)])
     end
 
     # mutations
 
-    seq_copy1 = ""
-    dein = seq_len
-    while length(seq_copy1) + seq_len - dein < seq_len * 1.2
-        dein = rand(1:seq_len)
-        if rand(1:2) == 1
-            if rand(1:100) == 21
-                seq_copy1 *= seq[1:dein] * rand(dna)
-            else
-                seq_copy1 *= seq[1:dein] * rand(dna) * rand(dna) * rand(dna) 
+    mutated_seq = seq
+
+    n = seq_len
+    @show seq, mutated_seq
+
+    while n < seq_len * 1.2
+        dein = rand(1:n)
+        
+        if dein <= n - 2
+            if rand(1:2) == 1
+                if rand(1:100) == 21
+                    other = mutated_seq[dein + 1:end]
+                    mutated_seq = push!(mutated_seq[1:dein], dna[rand(1:4)])
+                    append!(mutated_seq, other)
+                else
+                    other = mutated_seq[dein + 1:end]
+                    mutated_seq = push!(mutated_seq[1:dein], dna[rand(1:4)], dna[rand(1:4)], dna[rand(1:4)])
+                    append!(mutated_seq, other)
+                end
+            elseif n > seq_len
+                if rand(1:100) == 21
+                    mutated_seq = deleteat!(mutated_seq, dein)
+                else
+                    for i in 1:3
+                        mutated_seq = deleteat!(mutated_seq, dein)
+                    end
+                end
+            end
+        elseif dein == n - 1
+            if rand(1:2) == 1
+                if rand(1:100) == 21
+                    mutated_seq = push!(utated_seq[1:dein], dna[rand(1:4)], mutated_seq[end])
+                else
+                    mutated_seq = push!(mutated_seq[1:dein], dna[rand(1:4)], dna[rand(1:4)], dna[rand(1:4)], mutated_seq[end])
+                end
+            elseif n > seq_len
+                if rand(1:100) == 21
+                    deleteat!(mutated_seq, dein)
+                else
+                    for i in 1:3
+                        deleteat!(mutated_seq, dein - 1)
+                    end
+                end
             end
         else
-            if rand(1:100) == 21
-                seq_copy1 *= seq[1:dein] * rand(dna) 
-            else
-                seq_copy1 *= seq[1:dein] * rand(dna) * rand(dna) * rand(dna)
+            if rand(1:2) == 1
+                if rand(1:100) == 21
+                    mutated_seq = push!(mutated_seq[1:dein], dna[rand(1:4)])
+                else
+                    mutated_seq = push!(mutated_seq[1:dein], dna[rand(1:4)], dna[rand(1:4)], dna[rand(1:4)])
+                end
+            elseif n > seq_len
+                if rand(1:100) == 21
+                    deleteat!(mutated_seq, dein)
+                else
+                    for i in 1:3
+                        deleteat!(mutated_seq, dein - 2)
+                    end
+                end
             end
         end
+        n = length(mutated_seq)
     end
-
-    seq_copy1 *= seq[dein + 1:end]
 
     # sequencing errors
 
-    seq_copy2 = collect(seq_copy1)
-    for i in 1:length(seq_copy2)
+    for i in 1:n
         if rand(1:10) == 7
-            seq_copy2[i] = dna[rand(findall(x->x != seq_copy2[i], dna))]
+            mutated_seq[i] = dna[rand(findall(x->x != i, dna))]
         end
     end
 
-    return seq, join(seq_copy2, "")
+    return seq, mutated_seq
 end
 
-A, B = generate_seq(8)
+A, B = generate_seq(1500)
 println(A, "\n", B)
