@@ -1,5 +1,5 @@
 module BadGeneralAlignments
-export general_pairwise_aligner, dp_alignment, Move, Gap
+export general_pairwise_aligner, dp_alignment, Move, Gap, initiate
 
 
 struct Move
@@ -10,6 +10,10 @@ end
 struct Gap
     step::Int64
     score::Float64
+end
+
+function initiate(seq1::String, seq2::String)
+    general_pairwise_aligner(seq1, seq2, .0, 0.5, [Move((1, 1), 0), Move((1, 0), 1), Move((0, 1), 1), Move((3, 3), 0), Move((3, 0), 2), Move((0, 3), 2)], 0.5)
 end
 
 # match and mismatch matrix
