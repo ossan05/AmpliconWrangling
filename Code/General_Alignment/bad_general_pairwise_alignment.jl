@@ -1,7 +1,6 @@
 module BadGeneralAlignments
 export general_pairwise_aligner, dp_alignment, Move, Gap, initiate
 
-export general_pairwise_aligner, dp_alignment, Move, Gap
 using BioSequences
 
 struct Move
