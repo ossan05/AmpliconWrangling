@@ -17,21 +17,8 @@ function toInt(x::NucleicAcid)
 end
 toInt(DNA_A)
 
-macro DNASeq()
-    quote
-        LongSequence{DNAAlphabet{2}}
-    end
-end
-
-
-macro DNASeq(str)
-    quote
-        LongSequence{DNAAlphabet{2}}($(esc(str)))
-    end
-end
-
 # match and mismatch matrix
-function general_pairwise_aligner(A::@DNASeq, B::@DNASeq, match_score::Float64, mismatch_score::Float64, moves::Array{Move}) 
+function general_pairwise_aligner(A::LongDNA{2}, B::LongDNA{2}, match_score::Float64, mismatch_score::Float64, moves::Array{Move}) 
     
     match_score_matrix = zeros(4, 4)
 
@@ -48,7 +35,7 @@ end
 
 # general_pairwise_aligner makes a match/mismatch matrix and takes the tuple with the moves and scores, 
 # making them objects of type Move or Gap and puting them into lists 
-function general_pairwise_aligner(A::@DNASeq, B::@DNASeq, match_score_matrix::Array{Float64, 2}, moves::Array{Move}) 
+function general_pairwise_aligner(A::LongDNA{2}, B::LongDNA{2}, match_score_matrix::Array{Float64, 2}, moves::Array{Move}) 
     # sort the moves into gaps
     # moves are all the moves
     # v - vertical, h - horizontal
@@ -223,7 +210,7 @@ function general_pairwise_aligner(A::@DNASeq, B::@DNASeq, match_score_matrix::Ar
 end
 
 # Another method for affine gap penalties
-function general_pairwise_aligner(A::@DNASeq, B::@DNASeq, match_score::Float64, mismatch_score::Float64, moves::Array{Move}, affine_gap::Float64) 
+function general_pairwise_aligner(A::LongDNA{2}, B::LongDNA{2}, match_score::Float64, mismatch_score::Float64, moves::Array{Move}, affine_gap::Float64) 
     
     match_score_matrix = zeros(4, 4)
 
@@ -237,7 +224,7 @@ function general_pairwise_aligner(A::@DNASeq, B::@DNASeq, match_score::Float64, 
     end
     general_pairwise_aligner(A, B, match_score_matrix, moves, affine_gap) 
 end
-function general_pairwise_aligner(A::@DNASeq, B::@DNASeq, match_score_matrix::Array{Float64, 2}, moves::Array{Move}, affine_gap::Float64) 
+function general_pairwise_aligner(A::LongDNA{2}, B::LongDNA{2}, match_score_matrix::Array{Float64, 2}, moves::Array{Move}, affine_gap::Float64) 
 
     # sort the moves into gaps 
     matches = Vector{Move}()
@@ -349,8 +336,8 @@ function general_pairwise_aligner(A::@DNASeq, B::@DNASeq, match_score_matrix::Ar
     # backtracking
     y = m + 1
     x = n + 1
-    res_A = dna""
-    res_B = dna""
+    res_A = LongDNA{4}("")
+    res_B = LongDNA{4}("")
 
     while x > 1 || y > 1
         if x == 1
@@ -491,6 +478,6 @@ function general_pairwise_aligner(A::@DNASeq, B::@DNASeq, match_score_matrix::Ar
 end
 
 
-print(general_pairwise_aligner(@DNASeq("TTCGACTG"), @DNASeq("TACGACGACTG"), .0, 0.5, [Move((1, 1), 0), Move((1, 0), 1), Move((0, 1), 1), Move((3, 3), 0), Move((3, 0), 2), Move((0, 3), 2)], 0.5))
+print(general_pairwise_aligner(LongDNA{2}("TTCGACTG"), LongDNA{2}("TACGACGACTG"), .0, 0.5, [Move((1, 1), 0), Move((1, 0), 1), Move((0, 1), 1), Move((3, 3), 0), Move((3, 0), 2), Move((0, 3), 2)], 0.5))
 
 end
