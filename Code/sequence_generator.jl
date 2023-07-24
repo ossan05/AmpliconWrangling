@@ -13,7 +13,6 @@ function generate_seq(seq_len::Int)
     mutated_seq = seq
 
     n = seq_len
-    @show seq, mutated_seq
 
     while n < seq_len * 1.2
         dein = rand(1:n)
@@ -85,5 +84,5 @@ function generate_seq(seq_len::Int)
     return seq, mutated_seq
 end
 
-A, B = generate_seq(1500)
+A, B = generate_seq(7)
 println(A, "\n", B)
