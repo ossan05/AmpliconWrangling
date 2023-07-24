@@ -1,0 +1,80 @@
+using BioSequences
+using Kmers
+using .BadGeneralAlignments
+
+A = LongDNA{2}("ACGGTTAGCGCGCAAGGTCGATGTGTGTGTGTG")
+B = LongDNA{2}("TCGGTTACGCGCAAGGTCGATGAGTGTGTGTG")
+
+
+struct KmerMatch
+    posA::Int
+    posB::Int
+end
+
+function kmerMatching(A::LongDNA{2}, B::LongDNA{2}, match_score::Float64, mismatch_score::Float64, moves::Array{Move}, affine_gap::Float64, kmerLength::Int64 = 12) 
+    kmerMatching(A, B, make_match_score_matrix(match_score, mismatch_score), moves, affine_gap, kmerLength)
+end
+function kmerMatching(A::LongDNA{2}, B::LongDNA{2}, match_score_matrix::Array{Float64, 2}, moves::Array{Move}, affine_gap::Float64, kmerLength::Int64 = 12)
+    k = kmerLength
+    kmerDict = Dict{UInt128, Int64}()
+
+    m = length(A)
+    n = length(B)
+    #Initialize List of Kmer Matches
+    kmerMatches = KmerMatch[]
+    #Initialize Kmer Dictionary from A
+    #k = min(m-2, n-2, floor(Int64, log2(m*n)), 30)
+    for i in 1:m-k+1
+        kmer = hash(A[i:i+k-1])
+        if kmer in keys(kmerDict)
+            kmerDict[kmer] = typemax(Int64)
+        else
+            kmerDict[kmer] = i
+        end
+    end
+
+    #Compare B with dictionary
+    for iB in 1 : n-k+1
+        kmer = hash(B[iB : iB+k-1])
+        if haskey(kmerDict, kmer)
+            iA = kmerDict[kmer]
+            if iA == typemax(Int64)
+                continue
+            end
+            #if NotCompletelyConfident
+            #   Discard()
+            #end
+            push!(kmerMatches, KmerMatch(iA, iB))
+        end
+    end
+    #Pick set of compatible kmers (needs improvement)
+    prevA = -2k
+    prevB = -2k
+    filteredKmerMatches = KmerMatch[]
+    for kmer in kmerMatches
+        if prevB + k <= kmer.posB && prevA + k <= kmer.posA
+            prevA = kmer.posA
+            prevB = kmer.posB
+            push!(filteredKmerMatches, kmer)
+        end
+    end
+
+    prevA = -k+1
+    prevB = -k+1
+    #Join kmers using needleman Wunsch
+    #To first Kmer
+    result = fill(LongDNA{4}(""), 2)
+    for kmer in filteredKmerMatches
+        if !(kmer.posA == prevA + k && kmer.posB == prevB + k)
+            result .*= general_pairwise_aligner(A[prevA + k : kmer.posA - 1], B[prevB + k : kmer.posB - 1], match_score_matrix, moves, affine_gap)
+        end
+        result .*= [A[kmer.posA : kmer.posA + k - 1], B[kmer.posB : kmer.posB + k - 1]]
+        prevA = kmer.posA
+        prevB = kmer.posB
+    end
+    result .*= general_pairwise_aligner(A[prevA + k : m], B[prevB + k : n], match_score_matrix, moves, affine_gap)
+    println(result[1])
+    println(result[2])
+end
+
+kmerMatching(LongDNA{2}("ACGGTTAGCGCGCAAGGTCGATGTGTGTGTGTG"), LongDNA{2}("TCGGTTACGCGCAAGGTCGATGAGTGTGTGTG"), .0, 0.5, [Move((1, 1), 0), Move((1, 0), 1), Move((0, 1), 1), Move((3, 3), 0), Move((3, 0), 2), Move((0, 3), 2)], 0.5, 4)
