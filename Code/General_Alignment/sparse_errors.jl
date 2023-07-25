@@ -36,8 +36,8 @@ function kmerMatching(A::LongDNA{2}, B::LongDNA{2}, match_score_matrix::Array{Fl
 
     #Compare B with dictionary
     diagonals = fill(typemin(Int64), m+n) #diagonals[i] is the kmer in diagonal i furthest to the right. (used to find overlaps in matches)
-    for iB in 1 : n-k+1
-        kmer = hash(B[iB : iB+k-1])
+    for iB in 1:n - k + 1
+        kmer = hash(B[iB:iB + k - 1])
         if haskey(kmerDict, kmer)
             for iA in kmerDict[kmer]
                 if diagonals[iA - iB + n + 1] + k <= iA
@@ -48,33 +48,36 @@ function kmerMatching(A::LongDNA{2}, B::LongDNA{2}, match_score_matrix::Array{Fl
         end
     end
     @show kmerMatches
+
     #Pick set of compatible kmers (needs improvement)
     matchCount = length(kmerMatches)
-    deletionFlags = BitSet([0 for i in 1:matchCount])
+    deletionFlags = BitArray(zeros(Int64, matchCount))
     println(deletionFlags)
     meanA = sum(map(x -> x.posA, kmerMatches))/matchCount
     meanB = sum(map(x -> x.posB, kmerMatches))/matchCount
     meanAB = sum(map(x -> x.posA*x.posB, kmerMatches))
-    varA = sum(map(x -> (x.posA-meanA)^2))
-    varB = sum(map(x -> (x.posA-meanB)^2))
+    varA = sum(map(x -> (x.posA-meanA)^2, kmerMatches))
+    varB = sum(map(x -> (x.posA-meanB)^2, kmerMatches))
     corAB = (meanAB - meanA * meanB) / sqrt(varA * varB)
-    corScoreAB = corAB * (matchCount)
+    corScoreAB = corAB * matchCount
     @show corScoreAB
-    for i in 1 : matchCOunt
+
+    newMatchCount = matchCount 
+    for i in 1:matchCount
+        newMatchCount -= 1
         bestDeletion = -1
-        for j in matchCount
-            newMatchCount = matchCount-1
+        for j in 1:matchCount
             if !deletionFlags[j]
                 kmer = kmerMatches[j]
-                newMeanA = (matchCount*meanA - kmer.A) / newMatchCount
-                newMeanB = (matchCount*meanB - kmer.B) / newMatchCount
-                newMeanAB = (meanAB * matchCount - kmer.A * kmer.B) / newMatchCount
-                newVarA = varA-(matchCount/newMatchCount)(kmer.posA - meanA)^2
-                newVarB = varB-(matchCount/newMatchCount)(kmer.posB - meanB)^2
-                newCorAB = (newMeanAB - newMeanA * newMeanB)/ sqrt(newVarA * newVarB)
-                newCorScore = newCorAB * newMatchCount
-                if newCorScore >= corScore
-                    corScore = newCorScore
+                newMeanA = (matchCount * meanA - kmer.posA) / newMatchCount
+                newMeanB = (matchCount * meanB - kmer.posB) / newMatchCount
+                newMeanAB = (meanAB * matchCount - kmer.posA * kmer.posB) / newMatchCount
+                newVarA = varA - (matchCount/newMatchCount) * (kmer.posA - meanA)^2
+                newVarB = varB - (matchCount/newMatchCount) * (kmer.posB - meanB)^2
+                newCorAB = (newMeanAB - newMeanA * newMeanB) / sqrt(newVarA * newVarB)
+                newCorScoreAB = newCorAB * newMatchCount
+                if newCorScoreAB >= corScoreAB
+                    corScoreAB = newCorScoreAB
                     bestDeletion = j
                 end
             end
@@ -84,20 +87,20 @@ function kmerMatching(A::LongDNA{2}, B::LongDNA{2}, match_score_matrix::Array{Fl
         else
             deletionFlags[bestDeletion] = true
             kmer = kmerMatches[bestDeletion]
-            meanA = (matchCount*meanA - kmer.A) / newMatchCount
-            meanB = (matchCount*meanB - kmer.B) / newMatchCount
-            meanAB = (meanAB * matchCount - kmer.A * kmer.B) / newMatchCount
-            varA = varA-(matchCount/newMatchCount)(kmer.posA - meanA)^2
-            varB = varB-(matchCount/newMatchCount)(kmer.posB - meanB)^2
-            corAB = (newMeanAB - newMeanA * newMeanB)/ sqrt(newVarA * newVarB)
-            corScoreAB = newCor * newMatchCount
+            meanA = (matchCount*meanA - kmer.posA) / newMatchCount
+            meanB = (matchCount*meanB - kmer.posB) / newMatchCount
+            meanAB = (meanAB * matchCount - kmer.posA * kmer.posB) / newMatchCount
+            varA = varA - (matchCount/newMatchCount) * (kmer.posA - meanA)^2
+            varB = varB - (matchCount/newMatchCount) * (kmer.posB - meanB)^2
+            corAB = (newMeanAB - newMeanA * newMeanB)/ sqrt(newVarA * newVarB) # not needed?
+
             println("Deleted kmer $(A[kmer.posA:kmer.posA+k-1]) at position $(kmer.posA), $(kmer.posB)")
             println("New correlation score = $corScoreAB")
         end
     end
-    kmerMatches = kmerMatches[findall(x->!deletionFlags[x]) for i in 1 : kmerCount]
-    kmerCount = length(kmerMatches)
-    println(kmerMatches)
+    filteredKmerMatches = [kmerMatches[i] for i in findall(x->!deletionFlags[x], [i for i in 1:matchCount])] # excludes "deleted" kmers
+    println(filteredKmerMatches)
+
     prevA = -k+1
     prevB = -k+1
     #Join kmers using needleman Wunsch
