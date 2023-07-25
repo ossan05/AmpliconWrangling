@@ -1,6 +1,3 @@
-module BadGeneralAlignments
-export general_pairwise_aligner, dp_alignment, Move, Gap, initiate
-
 using BioSequences
 
 struct Move
@@ -15,27 +12,27 @@ end
 
 function initiate(seq1::LongDNA{2}, seq2::LongDNA{2})
     general_pairwise_aligner(seq1, seq2, .0, 0.5, [Move((1, 1), 0), Move((1, 0), 1), Move((0, 1), 1), Move((3, 3), 0), Move((3, 0), 2), Move((0, 3), 2)], 0.5)
-
 end
 function toInt(x::NucleicAcid)
     trailing_zeros(reinterpret(UInt8,x))+1
 end
 toInt(DNA_A)
 
-# match and mismatch matrix
-function general_pairwise_aligner(A::LongDNA{2}, B::LongDNA{2}, match_score::Float64, mismatch_score::Float64, moves::Array{Move}) 
-    
-    match_score_matrix = zeros(4, 4)
-
-    # this is when every mismatch between nucletides have the same penalty 
-    for i ∈ 1:4, j ∈ 1:4
+function make_match_score_matrix(match_score, mismatch_score)
+    m = zeros(4, 4)
+    for i in 1:4, j in 1:4
         if i == j
-            match_score_matrix[i, j] = match_score
+            m[i, j] = match_score
         else
-            match_score_matrix[i, j] = mismatch_score
+            m[i, j] = mismatch_score
         end
     end
-    general_pairwise_aligner(A, B, match_score_matrix, moves) 
+    return m
+end
+
+# match and mismatch matrix
+function general_pairwise_aligner(A::LongDNA{2}, B::LongDNA{2}, match_score::Float64, mismatch_score::Float64, moves::Array{Move}) 
+    general_pairwise_aligner(A, B, make_match_score_matrix(match_score, mismatch_score), moves) 
 end
 
 # general_pairwise_aligner makes a match/mismatch matrix and takes the tuple with the moves and scores, 
@@ -347,7 +344,7 @@ function general_pairwise_aligner(A::LongDNA{2}, B::LongDNA{2}, match_score_matr
     while x > 1 || y > 1
         if x == 1
             push!(res_A, DNA_Gap)
-            psuh!(res_B, B[y - 1])
+            push!(res_B, B[y - 1])
             y -= 1
         elseif y == 1
             push!(res_A, A[x - 1])
@@ -436,7 +433,7 @@ function general_pairwise_aligner(A::LongDNA{2}, B::LongDNA{2}, match_score_matr
                     # check if the move lead to the current cell
                     elseif dp_matrix[x, y] == dp_matrix[x, y - k.step] + k.score
                         for i ∈ 1:k.step
-                            res_A *= DNA_Gap
+                            push!(res_A, DNA_Gap)
                             push!(res_B, B[y - i])
                         end
                         y -= k.step
@@ -482,7 +479,4 @@ function general_pairwise_aligner(A::LongDNA{2}, B::LongDNA{2}, match_score_matr
     return reverse(res_A), reverse(res_B)
 end
 
-
-print(general_pairwise_aligner(LongDNA{2}("TTCGACTG"), LongDNA{2}("TACGACGACTG"), .0, 0.5, [Move((1, 1), 0), Move((1, 0), 1), Move((0, 1), 1), Move((3, 3), 0), Move((3, 0), 2), Move((0, 3), 2)], 0.5))
-
-end
+#print(general_pairwise_aligner(LongDNA{2}("TTCGACTG"), LongDNA{2}("TACGACGACTG"), .0, 0.5, [Move((1, 1), 0), Move((1, 0), 1), Move((0, 1), 1), Move((3, 3), 0), Move((3, 0), 2), Move((0, 3), 2)], 0.5))
