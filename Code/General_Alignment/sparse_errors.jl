@@ -1,4 +1,5 @@
 include("bad_general_pairwise_alignment.jl")
+include("custom_2D_stats.jl")
 export kmerMatching, KmerMatch, Move, general_pairwise_aligner, Gap, make_match_score_matrix
 using BioSequences
 using Kmers
@@ -6,6 +7,9 @@ using Kmers
 A = LongDNA{2}("ACGGTTAGCGCGCAAGGTCGATGTGTGTGTGTG")
 B = LongDNA{2}("TCGGTTACGCGCAAGGTCGATGAGTGTGTGTG")
 
+function CorrelationScore(s::SampleMetrics2D)
+    return sqrt(s.n) * s.correlation
+end
 
 struct KmerMatch
     posA::Int
@@ -36,12 +40,14 @@ function kmerMatching(A::LongDNA{2}, B::LongDNA{2}, match_score_matrix::Array{Fl
 
     #Compare B with dictionary
     diagonals = fill(typemin(Int64), m+n) #diagonals[i] is the kmer in diagonal i furthest to the right. (used to find overlaps in matches)
-    for iB in 1:n - k + 1
-        kmer = hash(B[iB:iB + k - 1])
+    for iB in 1 : n-k+1
+        kmer = hash(B[iB : iB+k-1])
         if haskey(kmerDict, kmer)
             for iA in kmerDict[kmer]
                 if diagonals[iA - iB + n + 1] + k <= iA
                     push!(kmerMatches, KmerMatch(iA, iB))
+                else
+                    println("deleted kmer $iA, $iB")
                 end
                 diagonals[iA - iB + n + 1] = iA
             end
@@ -49,35 +55,24 @@ function kmerMatching(A::LongDNA{2}, B::LongDNA{2}, match_score_matrix::Array{Fl
     end
     @show kmerMatches
 
-    #Pick set of compatible kmers (needs improvement)
+    #Prune set of kmers
     matchCount = length(kmerMatches)
-    deletionFlags = BitArray(zeros(Int64, matchCount))
+    deletionFlags = BitArray([0 for i in 1:matchCount])
     println(deletionFlags)
-    meanA = sum(map(x -> x.posA, kmerMatches))/matchCount
-    meanB = sum(map(x -> x.posB, kmerMatches))/matchCount
-    meanAB = sum(map(x -> x.posA*x.posB, kmerMatches))
-    varA = sum(map(x -> (x.posA-meanA)^2, kmerMatches))
-    varB = sum(map(x -> (x.posA-meanB)^2, kmerMatches))
-    corAB = (meanAB - meanA * meanB) / sqrt(varA * varB)
-    corScoreAB = corAB * matchCount
-    @show corScoreAB
-
-    newMatchCount = matchCount 
-    for i in 1:matchCount
-        newMatchCount -= 1
+    kmerMetrics = GetSampleMetrics2D(map(x -> x.posA, kmerMatches), map(x -> x.posB, kmerMatches))
+    corScore = CorrelationScore(kmerMetrics)
+    @show corScore
+    for i in 1 : matchCount
         bestDeletion = -1
-        for j in 1:matchCount
+        if kmerMetrics.n <= 2
+            break
+        end
+        for j in 1 : matchCount
             if !deletionFlags[j]
                 kmer = kmerMatches[j]
-                newMeanA = (matchCount * meanA - kmer.posA) / newMatchCount
-                newMeanB = (matchCount * meanB - kmer.posB) / newMatchCount
-                newMeanAB = (meanAB * matchCount - kmer.posA * kmer.posB) / newMatchCount
-                newVarA = varA - (matchCount/newMatchCount) * (kmer.posA - meanA)^2
-                newVarB = varB - (matchCount/newMatchCount) * (kmer.posB - meanB)^2
-                newCorAB = (newMeanAB - newMeanA * newMeanB) / sqrt(newVarA * newVarB)
-                newCorScoreAB = newCorAB * newMatchCount
-                if newCorScoreAB >= corScoreAB
-                    corScoreAB = newCorScoreAB
+                newCorScore = CorrelationScore(RemoveVector(kmerMetrics, kmer.posA, kmer.posB))
+                if newCorScore > corScore
+                    corScore = newCorScore
                     bestDeletion = j
                 end
             end
@@ -87,20 +82,27 @@ function kmerMatching(A::LongDNA{2}, B::LongDNA{2}, match_score_matrix::Array{Fl
         else
             deletionFlags[bestDeletion] = true
             kmer = kmerMatches[bestDeletion]
-            meanA = (matchCount*meanA - kmer.posA) / newMatchCount
-            meanB = (matchCount*meanB - kmer.posB) / newMatchCount
-            meanAB = (meanAB * matchCount - kmer.posA * kmer.posB) / newMatchCount
-            varA = varA - (matchCount/newMatchCount) * (kmer.posA - meanA)^2
-            varB = varB - (matchCount/newMatchCount) * (kmer.posB - meanB)^2
-            corAB = (newMeanAB - newMeanA * newMeanB)/ sqrt(newVarA * newVarB) # not needed?
-
+            kmerMetrics = RemoveVector(kmerMetrics, kmer.posA, kmer.posB)
+            corScore = CorrelationScore(kmerMetrics)
             println("Deleted kmer $(A[kmer.posA:kmer.posA+k-1]) at position $(kmer.posA), $(kmer.posB)")
-            println("New correlation score = $corScoreAB")
+            println("New correlation score = $corScore")
         end
     end
-    filteredKmerMatches = [kmerMatches[i] for i in findall(x->!deletionFlags[x], [i for i in 1:matchCount])] # excludes "deleted" kmers
-    println(filteredKmerMatches)
 
+    #Ensure that kmers are compatible
+    filteredKmerMatches = KmerMatch[]
+    prevA = -k
+    prevB = -k
+    for i in 1 : matchCount
+        match = kmerMatches[i]
+        if !deletionFlags[i] && prevA + k <= match.posA && prevB + k <= match.posB
+            prevA = match.posA
+            prevB = match.posB
+            push!(filteredKmerMatches, match)
+        end
+    end
+
+    @show kmerMatches
     prevA = -k+1
     prevB = -k+1
     #Join kmers using needleman Wunsch
@@ -118,11 +120,11 @@ function kmerMatching(A::LongDNA{2}, B::LongDNA{2}, match_score_matrix::Array{Fl
     return (result[1], result[2])
 end
 
-A = LongDNA{2}("ACGGTTAGCGCGCAAGGTCGATGTGTGTGTGTG")
-B = LongDNA{2}("TCGGTTACGCGCAAGGTCGATGAGTGTGTGTG")
-mismatch_score = 0.5
-match_score = 0.0
-kmerLength = 5
-affine_score = 0.5
-moveset = [Move((1, 1), 0), Move((1, 0), 1), Move((0, 1), 1), Move((3, 3), 0), Move((3, 0), 2), Move((0, 3), 2)]
-kmerMatching(A, B, match_score, mismatch_score, moveset, affine_score, kmerLength)
+# A = LongDNA{2}("ACGGTTAGCGCGCAAGGTCGATGTGTGTGTGTGTG")
+# B = LongDNA{2}("TCGGTTACGCGCAAGGTCGATGAGTGTGTGTG")
+# mismatch_score = 0.5
+# match_score = 0.0
+# kmerLength = 5
+# affine_score = 0.5
+# moveset = [Move((1, 1), 0), Move((1, 0), 1), Move((0, 1), 1), Move((3, 3), 0), Move((3, 0), 2), Move((0, 3), 2)]
+# kmerMatching(A, B, match_score, mismatch_score, moveset, affine_score, kmerLength)
