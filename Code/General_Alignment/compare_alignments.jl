@@ -20,16 +20,16 @@ moveset = [Move((1, 1), 0), Move((1, 0), 1), Move((0, 1), 1), Move((3, 3), 0), M
 good = 0
 bad = 0
 for i in 1 : 100
-    A, B = generate_seq(40)
+    A, B = generate_seq(50)
     
     alignment1 = kmerMatching(A, B, match_score, mismatch_score, moveset, affine_score, kmerLength)
     alignment2 = general_pairwise_aligner(A, B, match_score, mismatch_score, moveset, affine_score)
-    # println("kmerAlign:")
-    # println(alignment1[1])
-    # println(alignment1[2])
-    # println("generalAlign:")
-    # println(alignment2[1])
-    # println(alignment2[2])
+    println("kmerAlign:")
+    println(alignment1[1])
+    println(alignment1[2])
+    println("generalAlign:")
+    println(alignment2[1])
+    println(alignment2[2])
 
     if reduce((a, b) -> a && b, alignment1 .== alignment2)
         global good += 1

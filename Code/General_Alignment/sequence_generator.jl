@@ -41,7 +41,7 @@ function generate_seq(seq_len::Int)
         elseif dein == n - 1
             if rand(1:2) == 1
                 if rand(1:100) == 21
-                    mutated_seq = push!(utated_seq[1:dein], dna[rand(1:4)], mutated_seq[end])
+                    mutated_seq = push!(mutated_seq[1:dein], dna[rand(1:4)], mutated_seq[end])
                 else
                     mutated_seq = push!(mutated_seq[1:dein], dna[rand(1:4)], dna[rand(1:4)], dna[rand(1:4)], mutated_seq[end])
                 end
