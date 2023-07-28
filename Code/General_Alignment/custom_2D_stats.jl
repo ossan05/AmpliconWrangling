@@ -37,8 +37,3 @@ function RemoveVector(s::SampleMetrics2D, x, y)
     modS.correlation = (modS.dotXY - modS.n * modS.meanX * modS.meanY) / sqrt(modS.nVarX * modS.nVarY)
     return modS
 end
-
-list1 = [32, 44, 24, 4, 9]
-list2 = [10, 11, 18, 35, 35]
-
-@show a = GetSampleMetrics2D(list1, list2)
