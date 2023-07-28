@@ -16,6 +16,15 @@ struct KmerMatch
     posB::Int
 end
 
+function initiate_kmerMatching(A::LongDNA{2}, B::LongDNA{2})
+    mismatch_score = 0.5
+    match_score = 0.0
+    kmerLength = 15
+    affine_score = 0.5
+    moveset = [Move((1, 1), 0), Move((1, 0), 1), Move((0, 1), 1), Move((3, 3), 0), Move((3, 0), 2), Move((0, 3), 2)]
+    kmerMatching(A, B, match_score, mismatch_score, moveset, affine_score, kmerLength)
+end
+
 function kmerMatching(A::LongDNA{2}, B::LongDNA{2}, match_score::Float64, mismatch_score::Float64, moves::Array{Move}, affine_gap::Float64, kmerLength::Int64 = 12) 
     return kmerMatching(A, B, make_match_score_matrix(match_score, mismatch_score), moves, affine_gap, kmerLength)
 end
@@ -46,22 +55,17 @@ function kmerMatching(A::LongDNA{2}, B::LongDNA{2}, match_score_matrix::Array{Fl
             for iA in kmerDict[kmer]
                 if diagonals[iA - iB + n + 1] + k <= iA
                     push!(kmerMatches, KmerMatch(iA, iB))
-                else
-                    println("deleted kmer $iA, $iB")
                 end
                 diagonals[iA - iB + n + 1] = iA
             end
         end
     end
-    @show kmerMatches
 
     #Prune set of kmers
     matchCount = length(kmerMatches)
     deletionFlags = BitArray([0 for i in 1:matchCount])
-    println(deletionFlags)
     kmerMetrics = GetSampleMetrics2D(map(x -> x.posA, kmerMatches), map(x -> x.posB, kmerMatches))
     corScore = CorrelationScore(kmerMetrics)
-    @show corScore
     for i in 1 : matchCount
         bestDeletion = -1
         if kmerMetrics.n <= 2
@@ -84,8 +88,6 @@ function kmerMatching(A::LongDNA{2}, B::LongDNA{2}, match_score_matrix::Array{Fl
             kmer = kmerMatches[bestDeletion]
             kmerMetrics = RemoveVector(kmerMetrics, kmer.posA, kmer.posB)
             corScore = CorrelationScore(kmerMetrics)
-            println("Deleted kmer $(A[kmer.posA:kmer.posA+k-1]) at position $(kmer.posA), $(kmer.posB)")
-            println("New correlation score = $corScore")
         end
     end
 
@@ -102,7 +104,6 @@ function kmerMatching(A::LongDNA{2}, B::LongDNA{2}, match_score_matrix::Array{Fl
         end
     end
 
-    @show kmerMatches
     prevA = -k+1
     prevB = -k+1
     #Join kmers using needleman Wunsch
@@ -122,9 +123,11 @@ end
 
 # A = LongDNA{2}("ACGGTTAGCGCGCAAGGTCGATGTGTGTGTGTGTG")
 # B = LongDNA{2}("TCGGTTACGCGCAAGGTCGATGAGTGTGTGTG")
+# A, B = generate_seq(3000)
+
 # mismatch_score = 0.5
 # match_score = 0.0
-# kmerLength = 5
+# kmerLength = 30
 # affine_score = 0.5
 # moveset = [Move((1, 1), 0), Move((1, 0), 1), Move((0, 1), 1), Move((3, 3), 0), Move((3, 0), 2), Move((0, 3), 2)]
 # kmerMatching(A, B, match_score, mismatch_score, moveset, affine_score, kmerLength)

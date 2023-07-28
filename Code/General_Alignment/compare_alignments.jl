@@ -3,6 +3,7 @@ include("bad_general_pairwise_alignment.jl")
 include("sequence_generator.jl")
 using BioSequences
 using Kmers
+using NextGenSeqUtils
 using BenchmarkTools
 
 #A = LongDNA{2}("ACGGTTAGCGCGCAAGGTCGATGTGTGTGTGTG")
@@ -17,25 +18,79 @@ moveset = [Move((1, 1), 0), Move((1, 0), 1), Move((0, 1), 1), Move((3, 3), 0), M
 
 
 
-good = 0
-bad = 0
-for i in 1 : 100
-    A, B = generate_seq(50)
+# good = 0
+# bad = 0
+# for i in 1 : 100
+#     A, B = generate_seq(50)
     
-    alignment1 = kmerMatching(A, B, match_score, mismatch_score, moveset, affine_score, kmerLength)
-    alignment2 = general_pairwise_aligner(A, B, match_score, mismatch_score, moveset, affine_score)
-    println("kmerAlign:")
-    println(alignment1[1])
-    println(alignment1[2])
-    println("generalAlign:")
-    println(alignment2[1])
-    println(alignment2[2])
+#     alignment1 = kmerMatching(A, B, match_score, mismatch_score, moveset, affine_score, kmerLength)
+#     alignment2 = general_pairwise_aligner(A, B, match_score, mismatch_score, moveset, affine_score)
+#     println("kmerAlign:")
+#     println(alignment1[1])
+#     println(alignment1[2])
+#     println("generalAlign:")
+#     println(alignment2[1])
+#     println(alignment2[2])
 
-    if reduce((a, b) -> a && b, alignment1 .== alignment2)
-        global good += 1
-    else
-        global bad += 1
-    end
-end
-@show good
-@show bad
+#     if reduce((a, b) -> a && b, alignment1 .== alignment2)
+#         global good += 1
+#     else
+#         global bad += 1
+#     end
+# end
+# @show good
+# @show bad
+
+A, B = generate_seq(20)
+# @benchmark triplet_nw_align(String(A), String(B))
+# @benchmark initiate(A, B)
+
+# @benchmark (kmer_seeded_align($String(A), $String(B); wordlength = 15, skip = 5))
+# @benchmark (initiate_kmerMatching($A, $B))
+
+# function calculate_score(A, B)
+#     score = 0
+#     gap = 1
+#     mis = 0.5
+#     streak = 0
+#     frame = 1
+#     affine = 0.5
+
+#     for i in 1:length(A)
+#         if A[i] == DNA_Gap
+#             score += gap
+#             streak += 1
+#             if streak % 3 == 0
+#                 score -= frame
+#             end
+#             if streak > 1
+#                 score -= affine
+#             end
+#         elseif A[i] != B[i]
+#             score += mis
+#             streak = 0
+#         else
+#             streak = 0
+#         end
+
+#         if A[i] == DNA_Gap
+#             score += gap
+#             streak += 1
+#             if streak % 3 == 0
+#                 score -= frame
+#             end
+#             if streak > 1
+#                 score -= affine
+#             end
+#         elseif A[i] == DNA_Gap && A[i] != B[i]
+#             score += mis
+#             streak = 0
+#         else
+#             streak = 0
+#         end
+#     end
+#     return score
+# end
+
+# println(calculate_score(kmer_seeded_align(String(A), String(B))...))
+# println(calculate_score(initiate_kmerMatching(A, B)...))
