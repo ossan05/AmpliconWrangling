@@ -10,8 +10,8 @@ struct Gap
     score::Float64
 end
 
-function initiate(seq1::LongDNA{2}, seq2::LongDNA{2})
-    general_pairwise_aligner(seq1, seq2, .0, 0.5, [Move((1, 1), 0), Move((1, 0), 1), Move((0, 1), 1), Move((3, 3), 0), Move((3, 0), 2), Move((0, 3), 2)], 0.5)
+function initiate_general_pairwise_aligner(seq1::LongDNA{2}, seq2::LongDNA{2})
+    general_pairwise_aligner(seq1, seq2, .0, 0.5, [Move((1, 1), 0), Move((1, 0), 1), Move((0, 1), 1), Move((3, 3), 0), Move((3, 0), 2), Move((0, 3), 2)])
 end
 function toInt(x::NucleicAcid)
     trailing_zeros(reinterpret(UInt8,x))+1
@@ -132,12 +132,12 @@ function general_pairwise_aligner(A::LongDNA{2}, B::LongDNA{2}, match_score_matr
 
     while x > 1 || y > 1
         if x == 1
-            res_A *= DNA_Gap
+            push!(res_A, DNA_Gap)
             push!(res_B, B[y - 1])
             y -= 1
         elseif y == 1
             push!(res_A, A[x - 1])
-            push!(res_B, DNAGap)
+            push!(res_B, DNA_Gap)
             x -= 1
         else
             # iterate through vertical gap moves
@@ -166,8 +166,8 @@ function general_pairwise_aligner(A::LongDNA{2}, B::LongDNA{2}, match_score_matr
                     # check if the move lead to the current cell
                     if dp_matrix[x, y] == dp_matrix[x, y - k.step] + k.score
                         for i ∈ 1:k.step
-                            res_A *= '_'
-                            res_B *= string(B[y - i])
+                            push!(res_A, DNA_Gap)
+                            push!(res_B, B[y - i])
                         end
                         y -= k.step
                         # break to stop iterating through moves
