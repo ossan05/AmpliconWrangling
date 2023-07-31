@@ -28,18 +28,20 @@ struct Endpoint
     isBeginning::Bool
 end
 
-function kmerChainMatching(A::LongDNA{2}, B::LongDNA{2}, match_score::Float64, mismatch_score::Float64, moves::Array{Move}, affine_gap::Float64, kmerLength::Int64 = 12) 
-    return kmerChainMatching(A, B, make_match_score_matrix(match_score, mismatch_score), moves, affine_gap, kmerLength)
+function kmerChainMatching(A::LongDNA{2}, B::LongDNA{2}, match_score::Float64, mismatch_score::Float64, match_moves::Vector{Move}, vgap_moves::Vector{Move}, hgap_moves::Vector{Move}, affine_gap::Float64, kmerLength::Int64 = 12) 
+    return kmerChainMatching(A, B, make_match_score_matrix(match_score, mismatch_score), match_moves::Vector{Move}, vgap_moves::Vector{Move}, hgap_moves::Vector{Move}, affine_gap, kmerLength)
 end
-function kmerChainMatching(A::LongDNA{2}, B::LongDNA{2}, match_score_matrix::Array{Float64, 2}, moves::Array{Move}, affine_gap::Float64, kmerLength::Int64 = 12)
+function kmerChainMatching(A::LongDNA{2}, B::LongDNA{2}, match_score_matrix::Array{Float64, 2}, match_moves::Vector{Move}, vgap_moves::Vector{Move}, hgap_moves::Vector{Move}, affine_gap::Float64, kmerLength::Int64 = 12)
     k = kmerLength
     kmerDict = Dict{UInt128, Array{Int64}}()
     repetitionTolerance = 5
 
     m = length(A)
     n = length(B)
+
     #Initialize List of Kmer Matches
     kmerMatches = KmerMatch[]
+    
     #Initialize Kmer Dictionary from A
     #k = min(m-2, n-2, floor(Int64, log2(m*n)), 30)
     for i in 1:m-k+1
@@ -70,6 +72,7 @@ function kmerChainMatching(A::LongDNA{2}, B::LongDNA{2}, match_score_matrix::Arr
         end
     end
     matchCount = length(kmerMatches)
+
     #Prune set of kmers  
     endpoints = Array{Endpoint}(undef,matchCount * 2)
     for i in 1 : matchCount
@@ -172,24 +175,26 @@ function kmerChainMatching(A::LongDNA{2}, B::LongDNA{2}, match_score_matrix::Arr
     result = [LongDNA{4}(""), LongDNA{4}("")]
     for kmer in kmerPath
         if !(kmer.posA == prevA + k && kmer.posB == prevB + k)
-            result .*= general_pairwise_aligner(A[prevA + k : kmer.posA - 1], B[prevB + k : kmer.posB - 1], match_score_matrix, moves, affine_gap)
+            result .*= general_pairwise_aligner(A[prevA + k : kmer.posA - 1], B[prevB + k : kmer.posB - 1], match_score_matrix, match_moves, vgap_moves, hgap_moves, affine_gap)
         end
         result .*= [A[kmer.posA : kmer.posA + k - 1], B[kmer.posB : kmer.posB + k - 1]]
         prevA = kmer.posA
         prevB = kmer.posB
     end
-    result .*= general_pairwise_aligner(A[prevA + k : m], B[prevB + k : n], match_score_matrix, moves, affine_gap)
+    result .*= general_pairwise_aligner(A[prevA + k : m], B[prevB + k : n], match_score_matrix, match_moves, vgap_moves, hgap_moves, affine_gap)
 
     return (result[1], result[2])
 end
 
-# A = LongDNA{2}("ACGGTTAGCGCGCAAGGTCGATGTGTGTGTGTGTG")
-# B = LongDNA{2}("TCGGTTACGCGCAAGGTCGATGAGTGTGTGTG")
-# mismatch_score = 0.5
-# match_score = 0.0
-# kmerLength = 5
-# affine_score = 0.5
-# moveset = [Move((1, 1), 0), Move((1, 0), 1), Move((0, 1), 1), Move((3, 3), 0), Move((3, 0), 2), Move((0, 3), 2)]
-# alignment = kmerChainMatching(A, B, match_score, mismatch_score, moveset, affine_score, kmerLength)
-# println(alignment[1])
-# println(alignment[2])
+A = LongDNA{2}("ACGGTTAGCGCGCAAGGTCGATGTGTGTGTGTGTG")
+B = LongDNA{2}("TCGGTTACGCGCAAGGTCGATGAGTGTGTGTG")
+#A, B = generate_seq(3000)
+
+mismatch_score = 1.0
+match_score = 0.0
+kmerLength = 30
+affine_score = 0.5
+match_moves = [Move(1, 0.5), Move(3, 1)]
+hgap_moves = [Move(3, 4), Move(1, 2)]
+vgap_moves = [Move(3, 4), Move(1, 2)]
+kmerChainMatching(A, B, match_score, mismatch_score, match_moves, hgap_moves, vgap_moves, affine_score, kmerLength)
