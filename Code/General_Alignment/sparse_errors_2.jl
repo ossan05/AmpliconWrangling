@@ -61,18 +61,17 @@ function kmerChainMatching(A::LongDNA{2}, B::LongDNA{2}, match_score_matrix::Arr
         if !haskey(kmerDict, hashedKmer)
            continue
         end 
-        if length(kmerDict) < repetitionTolerance
+        if length(kmerDict[hashedKmer]) > repetitionTolerance
             continue
         end
         for iA in kmerDict[hashedKmer]
             if diagonals[iA - iB + n + 1] + k <= iA
                 push!(kmerMatches, KmerMatch(iA, iB))
+                diagonals[iA - iB + n + 1] = iA
             end
-            diagonals[iA - iB + n + 1] = iA
         end
     end
     matchCount = length(kmerMatches)
-
     #Prune set of kmers  
     endpoints = Array{Endpoint}(undef,matchCount * 2)
     for i in 1 : matchCount
@@ -143,13 +142,6 @@ function kmerChainMatching(A::LongDNA{2}, B::LongDNA{2}, match_score_matrix::Arr
             push!(chains[chainIds[e.id]], e.id)
         end
     end
-    for i in 1 : chainNum
-        @show i
-        println(map(x -> [kmerMatches[x].posA, kmerMatches[x].posB], chains[i]))
-    end
-    for i in 1 : matchCount
-        println(kmerMatches[i], " -> ", kmerMatches[bestTransitions[i]], "  ", bestScores[i])
-    end
 
     #Back propagation
     kmerPath = Vector{KmerMatch}()
@@ -192,9 +184,10 @@ B = LongDNA{2}("TCGGTTACGCGCAAGGTCGATGAGTGTGTGTG")
 
 mismatch_score = 1.0
 match_score = 0.0
-kmerLength = 30
+kmerLength = 5
 affine_score = 0.5
-match_moves = [Move(1, 0.5), Move(3, 1)]
-hgap_moves = [Move(3, 4), Move(1, 2)]
-vgap_moves = [Move(3, 4), Move(1, 2)]
-kmerChainMatching(A, B, match_score, mismatch_score, match_moves, hgap_moves, vgap_moves, affine_score, kmerLength)
+match_moves = [Move(1, 0.0), Move(3, 0.0)]
+gap_moves = [Move(3, 2.0), Move(1, 1.0)]
+a = kmerChainMatching(A, B, match_score, mismatch_score, match_moves, gap_moves, gap_moves, affine_score, kmerLength)
+println(a[1])
+println(a[2])
