@@ -13,7 +13,7 @@ mismatch_score = 0.5
 match_score = 0.0
 kmerLength = 6
 affine_score = 0.5
-moveset = [Move((1, 1), 0), Move((1, 0), 1), Move((0, 1), 1), Move((3, 3), 0), Move((3, 0), 2), Move((0, 3), 2)]
+moveset = [((1, 1), .0), ((1, 0), 1.0), ((0, 1), 1.0), ((3, 3), 0.0), ((3, 0), 2.0), ((0, 3), 2.0)]
 
 # good = 0
 # bad = 0
@@ -38,10 +38,12 @@ moveset = [Move((1, 1), 0), Move((1, 0), 1), Move((0, 1), 1), Move((3, 3), 0), M
 # @show good
 # @show bad
 
+# A, B = generate_seq(20)
 # @benchmark triplet_nw_align(String(A), String(B))
-# @benchmark initiate(A, B)
+# @benchmark initiate_general_pairwise_aligner(A, B)
+# @benchmark affine_nw_align(String(A), String(B))
 
-# @benchmark (kmer_seeded_align($String(A), $String(B); wordlength = 15, skip = 5))
+# @benchmark (kmer_seeded_align($(String(A)), $(String(B)); wordlength = 15, skip = 5))
 # @benchmark (initiate_kmerMatching($A, $B))
 
 function calculate_score(A, B, match_score, mismatch_score, moveset, affine_score)
