@@ -65,8 +65,6 @@ function kmerChainMatching(A::LongDNA{2}, B::LongDNA{2}, match_score_matrix::Arr
         for iA in kmerDict[hashedKmer]
             if diagonals[iA - iB + n + 1] + k <= iA
                 push!(kmerMatches, KmerMatch(iA, iB))
-            else
-                println("deleted kmer $iA, $iB")
             end
             diagonals[iA - iB + n + 1] = iA
         end
@@ -166,18 +164,6 @@ function kmerChainMatching(A::LongDNA{2}, B::LongDNA{2}, match_score_matrix::Arr
     end
     @show kmerPath
     
-    # #Ensure that kmers are compatible
-    # filteredKmerMatches = KmerMatch[]
-    # prevA = -k
-    # prevB = -k
-    # for i in 1 : matchCount
-    #     match = kmerMatches[i]
-    #     if !deletionFlags[i] && prevA + k <= match.posA && prevB + k <= match.posB
-    #         prevA = match.posA
-    #         prevB = match.posB
-    #         push!(filteredKmerMatches, match)
-    #     end
-    # end
 
     prevA = -k+1
     prevB = -k+1
@@ -193,6 +179,7 @@ function kmerChainMatching(A::LongDNA{2}, B::LongDNA{2}, match_score_matrix::Arr
         prevB = kmer.posB
     end
     result .*= general_pairwise_aligner(A[prevA + k : m], B[prevB + k : n], match_score_matrix, moves, affine_gap)
+
     return (result[1], result[2])
 end
 

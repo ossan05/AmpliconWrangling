@@ -38,23 +38,24 @@ moveset = [Move((1, 1), 0), Move((1, 0), 1), Move((0, 1), 1), Move((3, 3), 0), M
 # @show good
 # @show bad
 
-A, B = generate_seq(20)
 # @benchmark triplet_nw_align(String(A), String(B))
 # @benchmark initiate(A, B)
 
 # @benchmark (kmer_seeded_align($String(A), $String(B); wordlength = 15, skip = 5))
 # @benchmark (initiate_kmerMatching($A, $B))
 
-function calculate_score(A, B)
+function calculate_score(A, B, match_score, mismatch_score, moveset, affine_score)
+    if length(A) != length(B)
+        error("Aligned sequences must be of equal lengths.")
+    end
+    n = length(A)
     score = 0
     gap = 1
-    mis = 0.5
     streak = 0
     frame = 1
-    affine = 0.5
 
-    for i in 1:length(A)
-        if A[i] == DNA_Gap
+    for i in 1 : length(A)
+        if A[i] == DNA_Gap && B[i] == DNA_Gap
             score += gap
             streak += 1
             if streak % 3 == 0
@@ -88,8 +89,13 @@ function calculate_score(A, B)
     end
     return score
 end
+
+A, B = generate_seq(20)
+
+
 align1 = kmer_seeded_align(String(A), String(B))
 align2 = kmerChainMatching(A, B, match_score, mismatch_score, moveset, affine_score, kmerLength)
+
 
 println(align1[1])
 println(align1[2])
