@@ -42,12 +42,12 @@ function generate_seq(seq_len::Int64, long_indel_frequency::Float64, indel_frequ
         if rand(1:2) == 1
             # insertion
 
-            insertion_pos = rand[1:n]
-            mutated_seq = append!(mutated_seq[1:insertion_pos], randseq(DNAAlphabet{2}(), SamplerUniform(dna"ACGT"), 3), mutated_seq[insertion_pos + 1:end])
+            insertion_pos = rand(1:n)
+            mutated_seq = mutated_seq[1:insertion_pos] * randseq(DNAAlphabet{2}(), SamplerUniform(dna"ACGT"), 3) * mutated_seq[insertion_pos + 1:end]
         else
             # deletion
 
-            deletion_pos = rand[1:n - 2]
+            deletion_pos = rand(1:n - 2)
             for i in 1:3
                 deleteat!(mutated_seq, deletion_pos)
             end
@@ -55,10 +55,10 @@ function generate_seq(seq_len::Int64, long_indel_frequency::Float64, indel_frequ
     end
 
     for i in 1:frameshifts
-        indel_pos = rand[1:n]
+        indel_pos = rand(1:n)
         if rand(1:2) == 1
             # insertion
-            mutated_seq = append!(mutated_seq[1:insertion_pos], randseq(DNAAlphabet{2}(), SamplerUniform(dna"ACGT"), 1), mutated_seq[insertion_pos + 1:end])
+            mutated_seq = mutated_seq[1:insertion_pos] * randseq(DNAAlphabet{2}() * SamplerUniform(dna"ACGT"), 1) * mutated_seq[insertion_pos + 1:end]
         else
             #delete
             deleteat!(mutated_seq, indel_pos)
@@ -70,11 +70,11 @@ function generate_seq(seq_len::Int64, long_indel_frequency::Float64, indel_frequ
 
         if rand(1:2) == 1
             # insertion
-            insertion_pos = rand[1:n]
-            mutated_seq = append!(mutated_seq[1:insertion_pos], randseq(DNAAlphabet{2}(), SamplerUniform(dna"ACGT"), len), mutated_seq[insertion_pos + 1:end])
+            insertion_pos = rand(1:n)
+            mutated_seq = mutated_seq[1:insertion_pos] * randseq(DNAAlphabet{2}(), SamplerUniform(dna"ACGT"), len) * mutated_seq[insertion_pos + 1:end]
         else
             # delete
-            deletion_pos = rand[1:n + 1 - len]
+            deletion_pos = rand(1:n + 1 - len)
             for i in 1:len
                 deleteat!(mutated_seq, deletion_pos)
             end
