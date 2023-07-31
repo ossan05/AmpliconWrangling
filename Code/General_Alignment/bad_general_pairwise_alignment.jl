@@ -5,8 +5,10 @@ struct Move
     score::Float64
 end
 
-function initiate_general_pairwise_aligner(seq1::LongDNA{2}, seq2::LongDNA{2})
-    general_pairwise_aligner(seq1, seq2, .0, 0.5, [((1, 1), .0), ((1, 0), 1.0), ((0, 1), 1.0), ((3, 3), 0.0), ((3, 0), 2.0), ((0, 3), 2.0)], 0.5)
+function initiate_general_pairwise_aligner(A::LongDNA{2}, B::LongDNA{2})
+    matches = [Move(1, 0.0)]
+    gaps = [Move(1, 1.0)]
+    general_pairwise_aligner(A, B, .0, 0.5, matches, gaps, gaps, 0.5)
 end
 function toInt(x::NucleicAcid)
     trailing_zeros(reinterpret(UInt8,x))+1
@@ -88,9 +90,8 @@ function general_pairwise_aligner(A::LongDNA{2}, B::LongDNA{2}, match_score_matr
     end
 
     # whole dp matrix
-    for i ∈ 2:n + 1
-        for j ∈ 2:m + 1
-
+    for j ∈ 2:m + 1
+        for i ∈ 2:n + 1
             # finding the lowest score move
 
             # the lowest score of vertical gaps is asigned to the current position in the matrix
@@ -209,72 +210,36 @@ function general_pairwise_aligner(A::LongDNA{2}, B::LongDNA{2}, match_score_matr
 end
 
 # Another method for affine Move penalties
-function general_pairwise_aligner(A::LongDNA{2}, B::LongDNA{2}, match_score::Float64, mismatch_score::Float64, moves::Vector{Tuple{Tuple{Int64, Int64}, Float64}}, affine_gap::Float64) 
-    
-    match_score_matrix = zeros(4, 4)
-
-    # this is when every mismatch between nucletides have the same penalty 
-    for i ∈ 1:4, j ∈ 1:4
-        if i == j
-            match_score_matrix[i, j] = match_score
-        else
-            match_score_matrix[i, j] = mismatch_score
-        end
-    end
-    general_pairwise_aligner(A, B, match_score_matrix, moves, affine_gap) 
+function general_pairwise_aligner(A::LongDNA{2}, B::LongDNA{2}, match_score::Float64, mismatch_score::Float64, matches::Vector{Move}, vgaps::Vector{Move}, hgaps::Vector{Move}, affine_gap::Float64) 
+    general_pairwise_aligner(A, B, make_match_score_matrix(match_score, mismatch_score), matches, vgaps, hgaps, affine_gap) 
 end
-function general_pairwise_aligner(A::LongDNA{2}, B::LongDNA{2}, match_score_matrix::Array{Float64, 2}, moves::Vector{Tuple{Tuple{Int64, Int64}, Float64}}, affine_gap::Float64) 
-
-    # sort the moves into gaps 
-    matches = Vector{Move}()
-    vgaps = Vector{Move}()
-    hgaps = Vector{Move}()
-
-    biggest_match = -Inf
-    biggest_vgap = -Inf
-    biggest_hgap = -Inf
-    for i ∈ moves
-        if i[1][2] == i[1][1]
-            push!(matches, Move(i[1][1], i[2]))
-            if i[1][2] > biggest_match
-                biggest_match = i[1][2]
-            end
-        elseif i[1][2] == 0
-            push!(vgaps, Move(i[1][1], i[2]))
-            if i[1][1] > biggest_vgap
-                biggest_vgap = i[1][1]
-            end
-        else
-            push!(hgaps, Move(i[1][2], i[2]))
-            if i[1][2] > biggest_hgap
-                biggest_hgap = i[1][2]
-            end
-        end
-    end
+function general_pairwise_aligner(A::LongDNA{2}, B::LongDNA{2}, match_score_matrix::Array{Float64, 2}, matches::Vector{Move}, vgaps::Vector{Move}, hgaps::Vector{Move}, affine_gap::Float64)
 
     # Needleman-Wunsch alignment
 
     n, m = length(A), length(B)
 
+    biggest_match = maximum(k -> k.step, matches)
+    vertical_offset = maximum(k -> k.step, vcat(matches, vgaps)) + 1
+    horizontal_offset = maximum(k -> k.step, vcat(matches, hgaps)) + 1
+
     # Elongated sequence and matrices for less comparisons
-    A = LongDNA{2}("A")^(biggest_match - 1) * A
-    B = LongDNA{2}("A")^(biggest_match - 1) * B
+    A2 = LongDNA{2}("A")^(vertical_offset - 1) * A
+    B2 = LongDNA{2}("A")^(horizontal_offset - 1) * B
 
-    vertical_offset = max(biggest_match, biggest_vgap) + 1
-    horizontal_offset = max(biggest_match, biggest_hgap) + 1
 
-    dp_matrix = fill(typemax(Float64),
+    dp_matrix = fill(Inf64,
                      n + vertical_offset,
                      m + horizontal_offset)
 
     dp_matrix[vertical_offset, horizontal_offset] = .0
 
 
-    vaffine_matrix = fill(typemax(Float64),
+    vaffine_matrix = fill(Inf64,
                          n + vertical_offset,
                          m + horizontal_offset)
 
-    haffine_matrix = fill(typemax(Float64),
+    haffine_matrix = fill(Inf64,
                          n + vertical_offset,
                          m + horizontal_offset)
 
@@ -308,8 +273,8 @@ function general_pairwise_aligner(A::LongDNA{2}, B::LongDNA{2}, match_score_matr
         end
     end
 
-    for i ∈ 1 + vertical_offset:vboundary
-        for j ∈ 1 + horizontal_offset:hboundary
+    for j ∈ 1 + horizontal_offset:hboundary
+        for i ∈ 1 + vertical_offset:vboundary
 
             # finds the best vertical move
 
@@ -341,10 +306,10 @@ function general_pairwise_aligner(A::LongDNA{2}, B::LongDNA{2}, match_score_matr
 
             for k ∈ matches
                 s = 0
-                iB = j - horizontal_offset + biggest_match - k.step
+                iB = j - k.step
 
-                for iA ∈ i - vertical_offset + biggest_match - k.step:i - vertical_offset - 1 + biggest_match
-                    s += match_score_matrix[toInt(A[iA]), toInt(B[iB])]
+                for iA ∈ i - k.step:i - 1
+                    s += match_score_matrix[toInt(A2[iA]), toInt(B2[iB])]
                     iB += 1
                 end 
 
@@ -368,10 +333,10 @@ function general_pairwise_aligner(A::LongDNA{2}, B::LongDNA{2}, match_score_matr
     while x > vertical_offset || y > horizontal_offset
         if x == vertical_offset
             push!(res_A, DNA_Gap)
-            push!(res_B, B[y - horizontal_offset - 1 + biggest_match])
+            push!(res_B, B2[y - 1])
             y -= 1
         elseif y == horizontal_offset
-            push!(res_A, A[x - vertical_offset - 1 + biggest_match])
+            push!(res_A, A2[x - 1])
             push!(res_B, DNA_Gap)
             x -= 1
         else
@@ -383,14 +348,14 @@ function general_pairwise_aligner(A::LongDNA{2}, B::LongDNA{2}, match_score_matr
                     
                     # write the result
                     for i ∈ 1:k.step
-                        push!(res_A, A[x - i - vertical_offset + biggest_match])
+                        push!(res_A, A2[x - i])
                         push!(res_B, DNA_Gap)
                     end
                     x -= k.step
                     # how long the affine Move is
                     while x > k.step && vaffine_matrix[x, y] == vaffine_matrix[x - k.step, y] + affine_gap * k.step
                         for i ∈ 1:k.step
-                            push!(res_A, A[x - i - vertical_offset + biggest_match])
+                            push!(res_A, A2[x - i])
                             push!(res_B, DNA_Gap)
                         end
                         x -= k.step
@@ -398,7 +363,7 @@ function general_pairwise_aligner(A::LongDNA{2}, B::LongDNA{2}, match_score_matr
 
                     # include the opening Move
                     for i ∈ 1:k.step
-                        push!(res_A, A[x - i - vertical_offset + biggest_match])
+                        push!(res_A, A2[x - i])
                         push!(res_B, DNA_Gap)
                     end
                     x -= k.step
@@ -409,7 +374,7 @@ function general_pairwise_aligner(A::LongDNA{2}, B::LongDNA{2}, match_score_matr
                 # check if the move lead to the current cell
                 elseif dp_matrix[x, y] == dp_matrix[x - k.step, y] + k.score
                     for i ∈ 1:k.step
-                        push!(res_A, A[x - i - vertical_offset + biggest_match])
+                        push!(res_A, A2[x - i])
                         push!(res_B, DNA_Gap)
                     end
                     x -= k.step
@@ -428,7 +393,7 @@ function general_pairwise_aligner(A::LongDNA{2}, B::LongDNA{2}, match_score_matr
                     # write the resulting sequences
                     for i ∈ 1:k.step
                         push!(res_A, DNA_Gap)
-                        push!(res_B, B[y - horizontal_offset - i + biggest_match])
+                        push!(res_B, B2[y - i])
                     end
                     y -= k.step
 
@@ -436,13 +401,13 @@ function general_pairwise_aligner(A::LongDNA{2}, B::LongDNA{2}, match_score_matr
                     while y > k.step && haffine_matrix[x, y] == haffine_matrix[x, y - k.step] + affine_gap * k.step
                         for i ∈ 1:k.step
                             push!(res_A, DNA_Gap)
-                            push!(res_B, B[y - horizontal_offset - i + biggest_match])
+                            push!(res_B, B2[y - i])
                         end
                         y -= k.step
                     end
                     for i ∈ 1:k.step
                         push!(res_A, DNA_Gap)
-                        push!(res_B, B[y - horizontal_offset - i + biggest_match])
+                        push!(res_B, B2[y - i])
                     end
                     y -= k.step
                     break
@@ -452,7 +417,7 @@ function general_pairwise_aligner(A::LongDNA{2}, B::LongDNA{2}, match_score_matr
                 elseif dp_matrix[x, y] == dp_matrix[x, y - k.step] + k.score
                     for i ∈ 1:k.step
                         push!(res_A, DNA_Gap)
-                        push!(res_B, B[y - horizontal_offset - i + biggest_match])
+                        push!(res_B, B2[y - i])
                     end
                     y -= k.step
 
@@ -465,10 +430,10 @@ function general_pairwise_aligner(A::LongDNA{2}, B::LongDNA{2}, match_score_matr
             for k ∈ matches
                 
                 s = 0
-                iB = y - horizontal_offset + biggest_match - k.step
+                iB = y - k.step
 
-                for iA ∈ x - vertical_offset + biggest_match - k.step:x - vertical_offset - 1 + biggest_match
-                    s += match_score_matrix[toInt(A[iA]), toInt(B[iB])]
+                for iA ∈ x - k.step:x - 1
+                    s += match_score_matrix[toInt(A2[iA]), toInt(B2[iB])]
                     iB += 1
                 end
 
@@ -482,8 +447,8 @@ function general_pairwise_aligner(A::LongDNA{2}, B::LongDNA{2}, match_score_matr
                     # write the resulting sequences
                     # k.step and k.step is the same
                     for i ∈ 1:k.step
-                        push!(res_A, A[x - vertical_offset - i + biggest_match])
-                        push!(res_B, B[y - horizontal_offset - i + biggest_match])
+                        push!(res_A, A2[x - i])
+                        push!(res_B, B2[y - i])
                     end
                     x -= k.step
                     y -= k.step
@@ -494,11 +459,13 @@ function general_pairwise_aligner(A::LongDNA{2}, B::LongDNA{2}, match_score_matr
             end
         end
     end
-
-    deleteat!(A, 1:biggest_match - 1)
-    deleteat!(B, 1:biggest_match - 1)
-
     return reverse(res_A), reverse(res_B)
 end
 
-print(general_pairwise_aligner(LongDNA{2}("TTCGACTG"), LongDNA{2}("TACGACGACTG"), .0, 0.5, [((1, 1), .0), ((1, 0), 1.0), ((0, 1), 1.0), ((3, 3), 0.0), ((3, 0), 2.0), ((0, 3), 2.0)], 0.5))
+# A = LongDNA{2}("ACGGTTAGCGCGCAAGGTCGATGTGTGTGTGTGTG")
+# B = LongDNA{2}("TCGGTTACGCGCAAGGTCGATGAGTGTGTGTG")
+# matches = [Move(1, 0.0), Move(3, 0.0)]
+# gaps = [Move(3, 2.0), Move(1, 1.0)]
+# alignment = general_pairwise_aligner(A, B, .0, 0.5, matches, gaps, gaps, 0.5)
+# println(alignment[1])
+# println(alignment[2])
