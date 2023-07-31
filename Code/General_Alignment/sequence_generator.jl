@@ -1,6 +1,20 @@
 using BioSequences
+using Distributions
 
-function generate_seq(seq_len::Int)
+# function check_divergence(A::LongSequence{2}, B::LongSequence{2})
+#     divergent_bases = max(length(A), length(B)) - min(length(A), length(B))
+
+#     for i in min(length(A), length(B))
+#         if A[i] != B[i]
+#             divergent_bases += 1
+#         end
+#     end
+
+#     return divergent_bases
+# end
+
+
+function generate_seq(seq_len::Int64, long_indel_frequency::Float64, indel_frequency::Float64, substitution_frequency::Float64, frameshift_frequency::Float64, long_length::Int64)
     seq = randseq(DNAAlphabet{2}(), SamplerUniform(dna"ACGT"), seq_len)
     dna = LongDNA{2}("ACGT")
    
@@ -14,12 +28,23 @@ function generate_seq(seq_len::Int)
 
     n = seq_len
 
-    x = ceil(seq_len / 8)
-    long_indel_frequency  = 10
+    indels = Poisson(n * indel_frequency)
+    frameshifts = indels * frameshift_frequency
+    long_indels  = Poisson(indel_count * long_indel_frequency)
+    substitutions  = Poisson(n * substitution_frequency)
+
+    Geometric(1/long_length)
+
+    for i in 1:substitutions
+        mutated_seq[rand(1:n)] = dna[rand(findall(x->x != mutated_seq[i], dna))]
+    end
+
+    for i in 1:indels
+        mutated_seq[rand]
 
     while x > 0
         indel_pos = rand(1:n)
-        if rand(1:long_indel_frequency) == 1 && x ÷ 7 > 1
+        if rand(Float64) <long_indel_frequencyg && x ÷ 7 > 1
             indel_len = rand(1:x ÷ 7)
         else
             indel_len = 1
@@ -61,21 +86,17 @@ function generate_seq(seq_len::Int)
                 x -= indel_len * 3
             end
         end
-        n = length(mutated_seq)    
+        n = length(mutated_seq)
     end
 
     # copy
-    copy_chance = rand(1:1) == 3
+    copy_chance = rand(1:3) == 3
     if copy_chance
         copy_len = n ÷ rand(10:20)
         copy_ind = rand(1:n - copy_len)
-        println(copy_ind)
-        @show mutated_seq
 
         other = mutated_seq[copy_ind:end]
         mutated_seq = append!(mutated_seq[1:copy_ind - 1], mutated_seq[copy_ind:copy_ind + copy_len])
-        append!(mutated_seq, other)
-        @show mutated_seq
     end
 
     # sequencing errors
@@ -88,6 +109,3 @@ function generate_seq(seq_len::Int)
 
     return seq, mutated_seq
 end
-
-A, B = generate_seq(50)
-println(A, "\n", B)
