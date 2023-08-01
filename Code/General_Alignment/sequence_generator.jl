@@ -43,7 +43,11 @@ function generate_seq(seq_len::Int64, long_indel_frequency::Float64, indel_frequ
             # insertion
 
             insertion_pos = rand(1:n)
-            mutated_seq = mutated_seq[1:insertion_pos] * randseq(DNAAlphabet{2}(), SamplerUniform(dna"ACGT"), 3) * mutated_seq[insertion_pos + 1:end]
+            if insertion_pos < n
+                mutated_seq = mutated_seq[1:insertion_pos] * randseq(DNAAlphabet{2}(), SamplerUniform(dna"ACGT"), 3) * mutated_seq[insertion_pos + 1:end]
+            else
+                mutated_seq = mutated_seq[1:insertion_pos] * randseq(DNAAlphabet{2}(), SamplerUniform(dna"ACGT"), 3)
+            end
         else
             # deletion
 
@@ -52,17 +56,23 @@ function generate_seq(seq_len::Int64, long_indel_frequency::Float64, indel_frequ
                 deleteat!(mutated_seq, deletion_pos)
             end
         end
+        n = length(mutated_seq)
     end
 
     for i in 1:frameshifts
         indel_pos = rand(1:n)
         if rand(1:2) == 1
             # insertion
-            mutated_seq = mutated_seq[1:insertion_pos] * randseq(DNAAlphabet{2}() * SamplerUniform(dna"ACGT"), 1) * mutated_seq[insertion_pos + 1:end]
+            if indel_pos < n
+                mutated_seq = mutated_seq[1:indel_pos] * randseq(DNAAlphabet{2}(), SamplerUniform(dna"ACGT"), 1) * mutated_seq[indel_pos + 1:end]
+            else
+                mutated_seq = mutated_seq[1:indel_pos] * randseq(DNAAlphabet{2}(), SamplerUniform(dna"ACGT"), 1)
+            end
         else
             #delete
             deleteat!(mutated_seq, indel_pos)
         end
+        n = length(mutated_seq)
     end
 
     for i in 1:long_indels
@@ -71,7 +81,11 @@ function generate_seq(seq_len::Int64, long_indel_frequency::Float64, indel_frequ
         if rand(1:2) == 1
             # insertion
             insertion_pos = rand(1:n)
-            mutated_seq = mutated_seq[1:insertion_pos] * randseq(DNAAlphabet{2}(), SamplerUniform(dna"ACGT"), len) * mutated_seq[insertion_pos + 1:end]
+            if insertion_pos < n
+                mutated_seq = mutated_seq[1:insertion_pos] * randseq(DNAAlphabet{2}(), SamplerUniform(dna"ACGT"), len) * mutated_seq[insertion_pos + 1:end]
+            else 
+                mutated_seq = mutated_seq[1:insertion_pos] * randseq(DNAAlphabet{2}(), SamplerUniform(dna"ACGT"), len)
+            end
         else
             # delete
             deletion_pos = rand(1:n + 1 - len)
@@ -79,6 +93,7 @@ function generate_seq(seq_len::Int64, long_indel_frequency::Float64, indel_frequ
                 deleteat!(mutated_seq, deletion_pos)
             end
         end
+        n = length(mutated_seq)
     end
 
             
@@ -143,7 +158,7 @@ function generate_seq(seq_len::Int64, long_indel_frequency::Float64, indel_frequ
     # sequencing errors
 
     for i in 1:n
-        if rand(1:100) == 7
+        if rand(1:5000) == 7
             mutated_seq[i] = dna[rand(findall(x->x != mutated_seq[i], dna))]
         end
     end

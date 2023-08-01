@@ -1,6 +1,5 @@
 include("bad_general_pairwise_alignment.jl")
 include("custom_2D_stats.jl")
-export kmerMatching, KmerMatch, Move, general_pairwise_aligner, Gap, make_match_score_matrix
 using BioSequences
 using Kmers
 
@@ -19,10 +18,11 @@ end
 function initiate_kmerMatching(A::LongDNA{2}, B::LongDNA{2})
     mismatch_score = 0.5
     match_score = 0.0
-    kmerLength = 15
+    kmerLength = 30
     affine_score = 0.5
-    moveset = [Move((1, 1), 0), Move((1, 0), 1), Move((0, 1), 1), Move((3, 3), 0), Move((3, 0), 2), Move((0, 3), 2)]
-    kmerMatching(A, B, match_score, mismatch_score, moveset, affine_score, kmerLength)
+    matches = [Move(1, 0), Move(3, 0)]
+    gaps = [Move(1, 1), Move(3, 2)]
+    kmerMatching(A, B, match_score, mismatch_score, matches, gaps, gaps, affine_score, kmerLength)
 end
 
 function kmerMatching(A::LongDNA{2}, B::LongDNA{2}, match_score::Float64, mismatch_score::Float64, match_moves::Vector{Move}, hgap_moves::Vector{Move}, vgap_moves::Vector{Move}, affine_gap::Float64, kmerLength::Int64 = 12) 
