@@ -9,19 +9,19 @@ struct Move
     score::Number
 end
 
-function init_matrices(n::Int64, m::Int64, vgaps::Vector{Move}, hgaps::Vector{Move})
-    dp_matrix = fill(Inf, n + 1, m + 1)
+function init_matrices(m::Int64, n::Int64, vgaps::Vector{Move}, hgaps::Vector{Move})
+    dp_matrix = fill(Inf, m + 1, n + 1)
     dp_matrix[1, 1] = .0
-    bt_matrix = fill((0, 0), n + 1, m + 1)
+    bt_matrix = fill((0, 0), m + 1, n + 1)
 
-    for i ∈ 2:n + 1, gap ∈ vgaps
+    for i ∈ 2:m + 1, gap ∈ vgaps
         if gap.move[1] < i && dp_matrix[i - gap.move[1], 1] + gap.score < dp_matrix[i, 1]
             dp_matrix[i, 1] = dp_matrix[i - gap.move[1], 1] + gap.score
             bt_matrix[i, 1] = (i - gap.move[1], 1)
         end
     end
 
-    for i ∈ 2:m + 1, gap ∈ hgaps
+    for i ∈ 2:n + 1, gap ∈ hgaps
         if gap.move[2] < i && dp_matrix[1, i - gap.move[2]] + gap.score < dp_matrix[1, i]
             dp_matrix[1, i] = dp_matrix[1, i - gap.move[2]] + gap.score
             bt_matrix[1, i] = (1, i - gap.move[2])
@@ -31,16 +31,18 @@ function init_matrices(n::Int64, m::Int64, vgaps::Vector{Move}, hgaps::Vector{Mo
     return dp_matrix, bt_matrix
 end
 
-function dp_alignment(A::String, B::String, vgaps::Vector{Move}, hgaps::Vector{Move}, moves::Vector{Move}, mismatch_score::Float64, long::Int64)
-    n, m = length(A), length(B)
+function 
 
-    dp_matrix = fill(typemax(Float64), long, m + 1)
+function nw_alignment(A::String, B::String, regMoves::Vector{Move}, gapMovesA::Vector{Move}, gapMovesB::Vector, matchMatrix::Float64, long::Int64)
+    m, n = length(A), length(B)
+
+    dp_matrix = fill(typemax(Float64), long, n + 1)
     dp_matrix[1, 1] = .0
-    bt_matrix = fill((0, 0), n + 1, m + 1)
-    ma_matrix = zeros(Float16, long, m)
+    bt_matrix = fill((0, 0), m + 1, n + 1)
+    ma_matrix = zeros(Float16, long, n)
+    moves = []
 
-
-    for i ∈ 2:m + 1, gap ∈ hgaps
+    for i ∈ 2:n + 1, gap ∈ hgaps
         if gap.move[2] < i && dp_matrix[1, i - gap.move[2]] + gap.score < dp_matrix[1, i]
             dp_matrix[1, i] = dp_matrix[1, i - gap.move[2]] + gap.score
             bt_matrix[1, i] = (1, gap.move[2])
@@ -49,7 +51,7 @@ function dp_alignment(A::String, B::String, vgaps::Vector{Move}, hgaps::Vector{M
 
     cyc = [i for i ∈ axes(dp_matrix, 1)] # 1, 2, 3...
 
-    for i ∈ 2:n + 1
+    for i ∈ 2:m + 1
 
 
         # Asign value to first column in new row
@@ -63,7 +65,7 @@ function dp_alignment(A::String, B::String, vgaps::Vector{Move}, hgaps::Vector{M
             end
         end
 
-        for j ∈ 2:m + 1
+        for j ∈ 2:n + 1
             if A[i - 1] != B[j - 1] 
                 ma_matrix[1, j - 1] = mismatch_score # some other index for the row
             end
@@ -174,38 +176,38 @@ function general_pairwise_aligner(A::String, B::String, match_score::Number, mis
     end
 
     # initiate dp_matrix, bt_matrix and ma_matrix
-    # bt_matrix = init_matrices(n, m, vgaps, hgaps)
+    # bt_matrix = init_matrices(m, n, vgaps, hgaps)
     bt_matrix = dp_alignment(A, B, vgaps, hgaps, moves, mismatch_score, long)
 
     display(bt_matrix)
-    println(A, "\n", B)
+    println(A, "\m", B)
 end
 
 
 
 
-function general_pairwise_aligner(A::String, B::String, match_score::Number, missmatch_score::Number, moves::Tuple, affine_gap::Number) 
+function general_pairwise_aligner(A::String, B::String, match_score::Number, mismatch_score::Number, moves::Tuple, affine_gap::Number) 
     match_matrix = zeros(4, 4)
 
     for i ∈ 1:4, j ∈ 1:4
         if i == j
             match_matrix[i, j] = match_score
         else
-            match_matrix[i, j] = missmatch_score
+            match_matrix[i, j] = mismatch_score
         end
     end
 
-    n, m = length(A), length(B)
+    m, n = length(A), length(B)
 
-    dp_matrix = zeros(Float64, n + 1, m + 1)
-    bt_matrix = zeros(Int64, n + 1, m + 1)
+    dp_matrix = zeros(Float64, m + 1, n + 1)
+    bt_matrix = zeros(Int64, m + 1, n + 1)
 
 
 end
 
 
 
-# println(A, "\n", B)
+# println(A, "\m", B)
 
 
 # general_pairwise_aligner("ACGT", "ACGT", 0, 0.5, ((1, 1), 1, (1, 0), 2, (0, 1), 2, (3, 3), 0, (3, 0), 2, (0, 3), 2))

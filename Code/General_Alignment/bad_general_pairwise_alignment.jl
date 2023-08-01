@@ -459,13 +459,17 @@ function general_pairwise_aligner(A::LongDNA{2}, B::LongDNA{2}, match_score_matr
             end
         end
     end
+    
+    println(reverse(res_A))
+    println(reverse(res_B))
+
     return reverse(res_A), reverse(res_B)
 end
 
-# A = LongDNA{2}("ACGGTTAGCGCGCAAGGTCGATGTGTGTGTGTGTG")
-# B = LongDNA{2}("TCGGTTACGCGCAAGGTCGATGAGTGTGTGTG")
-# matches = [Move(1, 0.0), Move(3, 0.0)]
-# gaps = [Move(3, 2.0), Move(1, 1.0)]
+# A = LongDNA{2}("GA")
+# B = LongDNA{2}("A")
+# match_moves = [Move(1, 0.0), Move(3, 0.0)]
+# gap_moves = [Move(3, 2.0), Move(1, 1.0)]
 # alignment = general_pairwise_aligner(A, B, .0, 0.5, matches, gaps, gaps, 0.5)
 # println(alignment[1])
 # println(alignment[2])
