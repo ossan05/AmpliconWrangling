@@ -13,6 +13,11 @@ Old_aff_nw = [14.946 , 68.349 , 188.608 , 399.125 , 673.922 , 935.105 , 1309 , 1
 Old_kmeralign = [0.394400 , 0.9072 , 4.847 , 8.476 , 18.812 , 25.321 , 26.667 , 30.455 , 96.079 , 39.447 , 97.425 , 17.375 , 67.941 , 220.274 , 134.627 , 122.520 , 226.438 , 125.014 , 312.716 , 305.850 ]
 Old_triplet_nw =[1.368 , 5.595 , 12.813 , 25.096 , 40.734 , 58.606 , 86.346 , 120.272 , 181.555 , 248.476 , 290.408 , 360.956 , 454.040 , 444.792 , 607.247 , 654.854 , 475.524 , 532.713 , 612.120 , 670.440 ]
 
+var_sum = 0.0005 + 0.003 + 0.00005 + 0.0001
+
+xvar = [3i * var_sum for i in 1:10]
+println(xvar)
+Var = [1.617, 1.815, 1.760, 1.668, 1.992, 2.009, 2.003, 2.165, 1.849, 2.230]
 
 # p = plot(x10, [Reg RegKmer],
 #         xlims = (0, 3000),
@@ -32,19 +37,26 @@ Old_triplet_nw =[1.368 , 5.595 , 12.813 , 25.096 , 40.734 , 58.606 , 86.346 , 12
 #         label=["Old kmer" "Old triplet NW"],
 #         lw=[2 1])
 
-plot(x10, RegKmer,
-        title="K-mer aligner",
-        xlims = (0, 3000),
-        xlabel="Length (nt bases)",
-        ylabel="Time (ms)",
-        label="Triplet",
-        lw = 4,
-        lc = :red)
+# plot(x10, RegKmer,
+#         title="K-mer aligner",
+#         xlims = (0, 3000),
+#         xlabel="Length (nt bases)",
+#         ylabel="Time (ms)",
+#         label="Triplet",
+#         lw = 4,
+#         lc = :red)
 
 
-plot!(x20, Old_kmeralign,
-        label="Old Triplet",
-        lw=4,
-        lc=:blue)
+# plot!(x20, Old_kmeralign,
+#         label="Old Triplet",
+#         lw=4,
+#         lc=:blue)
 
-savefig("KmerAligners.png")
+# savefig("KmerAligners.png")
+
+plot(xvar, Var,
+        title="Kmer matching vs variance",
+        xlabel="Variance",
+        ylabel="Time(ms)")
+
+savefig("KmerVariance")

@@ -123,16 +123,15 @@ function alignment_score(A::LongDNA{4}, B::LongDNA{4}, match_score_matrix::Array
         end
         dp[i] = minimum(k -> dp[i - k.step] + k.score, vcat(possible_match_moves, possible_vgap_moves, possible_hgap_moves, possible_affine_moves))
     end
-    println(dp)
     return dp[n + max_move] + match_score_total
 end
 
-A = LongDNA{4}("CGG-G---")
-B = LongDNA{4}("-ACCGCTG")
-reg_moves = [Move(1, 0)]
-gap_moves = [Move(3, 2), Move(1, 1)]
-alignment = (A, B)#general_pairwise_aligner(LongDNA{2}("TTCGACTG"), LongDNA{2}("TACGACGACTG"), .0, 0.5, [Move((1, 1), 0), Move((1, 0), 1), Move((0, 1), 1), Move((3, 3), 0), Move((3, 0), 2), Move((0, 3), 2)], 0.5)
-affine_score = 0.5
-println(alignment[1])
-println(alignment[2])
-@show alignment_score(alignment[1], alignment[2], 0.0, 0.5, reg_moves, gap_moves, gap_moves, affine_score)
+# A = LongDNA{4}("CGG-G---")
+# B = LongDNA{4}("-ACCGCTG")
+# reg_moves = [Move(1, 0)]
+# gap_moves = [Move(3, 2), Move(1, 1)]
+# alignment = (A, B)#general_pairwise_aligner(LongDNA{2}("TTCGACTG"), LongDNA{2}("TACGACGACTG"), .0, 0.5, [Move((1, 1), 0), Move((1, 0), 1), Move((0, 1), 1), Move((3, 3), 0), Move((3, 0), 2), Move((0, 3), 2)], 0.5)
+# affine_score = 0.5
+# # println(alignment[1])
+# # println(alignment[2])
+# # @show alignment_score(alignment[1], alignment[2], 0.0, 0.5, reg_moves, gap_moves, gap_moves, affine_score)
