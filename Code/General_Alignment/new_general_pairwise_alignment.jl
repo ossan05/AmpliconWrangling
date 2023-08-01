@@ -96,7 +96,7 @@ function alignment_score(A::LongDNA{4}, B::LongDNA{4}, match_score, mismatch_sco
     return alignment_score(A, B, make_match_score_matrix(match_score, mismatch_score), match_moves, vgap_moves, hgap_moves, affine_score)
 end
 
-function alignment_score(A::LongDNA{4}, B::LongDNA{4}, match_score_matrix::Array{Float64, 2}, match_moves::Array{Move}, vgap_moves::Array{Move}, hgap_moves::Array{Move}, affine_score)
+function alignment_score(A::LongDNA{4}, B::LongDNA{4}, match_score_matrix::Array{Float64, 2}, match_moves::Array{Move}, vgap_moves::Array{Move}, hgap_moves::Array{Move}, affine_score = -1)
     if length(A) != length(B)
         error("Aligned sequences must be of equal lengths.")
     end
@@ -111,24 +111,28 @@ function alignment_score(A::LongDNA{4}, B::LongDNA{4}, match_score_matrix::Array
     A2 = repeat(LongDNA{4}([DNA_N]), max_move) * A
     B2 = repeat(LongDNA{4}([DNA_N]), max_move) * B
 
-    dp = fill(Inf64, n+max_move + 1)
+    dp = fill(Inf64, n+max_move)
     dp[max_move] = 0
-    for i in max_move + 1 : n + max_move + 1
-        possible_match_moves = filter(k -> !any(t -> A2[i - t] == DNA_Gap || B2[i - t] == DNA_Gap, 1 : k.step), match_moves)
-        possible_vgap_moves = filter(k -> !any(t -> A2[i - t] != DNA_Gap, 1 : k.step), vgap_moves)
-        possible_hgap_moves = filter(k -> !any(t -> B2[i - t] != DNA_Gap, 1 : k.step), hgap_moves)
-        dp[i] = minimum(k -> dp[i - k.step] + k.score, vcat(possible_match_moves, possible_vgap_moves, possible_hgap_moves))
+    for i in max_move + 1 : n + max_move
+        possible_match_moves = filter(k -> !any(t -> A2[i - t] == DNA_Gap || B2[i - t] == DNA_Gap, 0 : k.step - 1), match_moves)
+        possible_vgap_moves = filter(k -> !any(t -> A2[i - t] != DNA_Gap, 0 : k.step - 1), vgap_moves)
+        possible_hgap_moves = filter(k -> !any(t -> B2[i - t] != DNA_Gap, 0 : k.step - 1), hgap_moves)
+        possible_affine_moves = Vector{Move}()
+        if affine_score >= 0 && (A2[i] == A2[i - 1] == DNA_Gap || B2[i] == B2[i - 1] == DNA_Gap)
+            push!(possible_affine_moves, Move(1, affine_score))
+        end
+        dp[i] = minimum(k -> dp[i - k.step] + k.score, vcat(possible_match_moves, possible_vgap_moves, possible_hgap_moves, possible_affine_moves))
     end
     println(dp)
-    return dp[n + max_move + 1] + match_score_total
+    return dp[n + max_move] + match_score_total
 end
 
-A = LongDNA{4}("TTCGA-GAAAC---GTTAA")
-B = LongDNA{4}("TACGACG-CTGAAC--GTT") 
+A = LongDNA{4}("CGG-G---")
+B = LongDNA{4}("-ACCGCTG")
 reg_moves = [Move(1, 0)]
 gap_moves = [Move(3, 2), Move(1, 1)]
 alignment = (A, B)#general_pairwise_aligner(LongDNA{2}("TTCGACTG"), LongDNA{2}("TACGACGACTG"), .0, 0.5, [Move((1, 1), 0), Move((1, 0), 1), Move((0, 1), 1), Move((3, 3), 0), Move((3, 0), 2), Move((0, 3), 2)], 0.5)
-affine_score = 
+affine_score = 0.5
 println(alignment[1])
 println(alignment[2])
 @show alignment_score(alignment[1], alignment[2], 0.0, 0.5, reg_moves, gap_moves, gap_moves, affine_score)
