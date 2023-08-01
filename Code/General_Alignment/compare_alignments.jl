@@ -55,7 +55,7 @@ function calculate_score(A, B, match_score, mismatch_score, moveset, affine_scor
     streak = 0
     frame = 1
 
-    for i in 1 : length(A)
+    for i in axes(A)
         if A[i] == DNA_Gap && B[i] == DNA_Gap
             score += gap
             streak += 1

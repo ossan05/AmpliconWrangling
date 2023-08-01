@@ -3,9 +3,6 @@ include("custom_2D_stats.jl")
 using BioSequences
 using Kmers
 
-A = LongDNA{2}("ACGGTTAGCGCGCAAGGTCGATGTGTGTGTGTG")
-B = LongDNA{2}("TCGGTTACGCGCAAGGTCGATGAGTGTGTGTG")
-
 function CorrelationScore(s::SampleMetrics2D)
     return sqrt(s.n) * s.correlation
 end
@@ -65,7 +62,6 @@ function kmerMatching(A::LongDNA{2}, B::LongDNA{2}, match_score_matrix::Array{Fl
             end
         end
     end
-    @show kmerMatches
     #Prune set of kmers
     matchCount = length(kmerMatches)
     remaining_matches = matchCount
@@ -86,15 +82,12 @@ function kmerMatching(A::LongDNA{2}, B::LongDNA{2}, match_score_matrix::Array{Fl
             end
         end
         max_pruning_num = floor(Int64,remaining_matches*max_pruning_fraction + 1.0)
-        println(corScore)
         sort!(deletion_candidates, rev = true)
         cand = map(x -> (x[1], kmerMatches[x[2]]), deletion_candidates)
-        @show cand
         prev_remaining_matches = remaining_matches
         for j in 1 : max_pruning_num
             if deletion_candidates[j][1] > corScore && remaining_matches > 3
                 kmer = deletion_candidates[j][2]
-                println("deleted ", kmerMatches[kmer].posA, " ", kmerMatches[kmer].posB)
                 deletionFlags[kmer] = true
                 kmerMetrics = RemoveVector(kmerMetrics, kmerMatches[kmer].posA, kmerMatches[kmer].posB)
                 corScore = CorrelationScore(kmerMetrics)
@@ -107,7 +100,6 @@ function kmerMatching(A::LongDNA{2}, B::LongDNA{2}, match_score_matrix::Array{Fl
             break
         end
     end
-    @show kmerMatches[filter(i -> !deletionFlags[i], 1 : matchCount)]
     #Ensure that kmers are compatible
     filteredKmerMatches = KmerMatch[]
     prevA = -k
@@ -120,7 +112,6 @@ function kmerMatching(A::LongDNA{2}, B::LongDNA{2}, match_score_matrix::Array{Fl
             push!(filteredKmerMatches, match)
         end
     end
-    @show filteredKmerMatches
 
     prevA = -k+1
     prevB = -k+1

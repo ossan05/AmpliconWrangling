@@ -439,9 +439,6 @@ function general_pairwise_aligner(A::LongDNA{2}, B::LongDNA{2}, match_score_matr
             end
         end
     end
-    
-    println(reverse(res_A))
-    println(reverse(res_B))
 
     return reverse(res_A), reverse(res_B)
 end
