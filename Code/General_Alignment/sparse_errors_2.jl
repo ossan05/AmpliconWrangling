@@ -28,6 +28,17 @@ struct Endpoint
     isBeginning::Bool
 end
 
+function initiate_KmerChainMatching(A::LongDNA{2}, B::LongDNA{2})
+    mismatch_score = 1.0
+    match_score = 0.0
+    kmerLength = 30
+    affine_score = 0.5
+    match_moves = [Move(1, 0.5), Move(3, 1)]
+    hgap_moves = [Move(3, 4), Move(1, 2)]
+    vgap_moves = [Move(3, 4), Move(1, 2)]
+    kmerChainMatching(A, B, match_score, mismatch_score, match_moves, hgap_moves, vgap_moves, affine_score, kmerLength)
+end
+
 function kmerChainMatching(A::LongDNA{2}, B::LongDNA{2}, match_score::Float64, mismatch_score::Float64, match_moves::Vector{Move}, vgap_moves::Vector{Move}, hgap_moves::Vector{Move}, affine_gap::Float64, kmerLength::Int64 = 12) 
     return kmerChainMatching(A, B, make_match_score_matrix(match_score, mismatch_score), match_moves::Vector{Move}, vgap_moves::Vector{Move}, hgap_moves::Vector{Move}, affine_gap, kmerLength)
 end
@@ -143,13 +154,6 @@ function kmerChainMatching(A::LongDNA{2}, B::LongDNA{2}, match_score_matrix::Arr
             push!(chains[chainIds[e.id]], e.id)
         end
     end
-    for i in 1 : chainNum
-        @show i
-        println(map(x -> [kmerMatches[x].posA, kmerMatches[x].posB], chains[i]))
-    end
-    for i in 1 : matchCount
-        println(kmerMatches[i], " -> ", kmerMatches[bestTransitions[i]], "  ", bestScores[i])
-    end
 
     #Back propagation
     kmerPath = Vector{KmerMatch}()
@@ -165,7 +169,6 @@ function kmerChainMatching(A::LongDNA{2}, B::LongDNA{2}, match_score_matrix::Arr
         end
         reverse!(kmerPath)
     end
-    @show kmerPath
     
 
     prevA = -k+1

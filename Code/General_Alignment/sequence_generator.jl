@@ -158,7 +158,7 @@ function generate_seq(seq_len::Int64, long_indel_frequency::Float64, indel_frequ
     # sequencing errors
 
     for i in 1:n
-        if rand(1:100) == 7
+        if rand(1:5000) == 7
             mutated_seq[i] = dna[rand(findall(x->x != mutated_seq[i], dna))]
         end
     end
