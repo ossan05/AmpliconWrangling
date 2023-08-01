@@ -92,7 +92,7 @@ include("bad_general_pairwise_alignment.jl")
 #     return reverse(res_A), reverse(res_B)
 # end
 
-function alignment_score(A::LongDNA{4}, B::LongDNA{4}, match_score, mismatch_score, match_moves::Array{Move}, vgap_moves::Array{Move}, hgap_moves::Array{Move}, affine_score)
+function alignment_score(A::LongDNA{4}, B::LongDNA{4}, match_score, mismatch_score, match_moves::Array{Move}, vgap_moves::Array{Move}, hgap_moves::Array{Move}, affine_score = -1)
     return alignment_score(A, B, make_match_score_matrix(match_score, mismatch_score), match_moves, vgap_moves, hgap_moves, affine_score)
 end
 
@@ -125,6 +125,7 @@ function alignment_score(A::LongDNA{4}, B::LongDNA{4}, match_score_matrix::Array
     end
     return dp[n + max_move] + match_score_total
 end
+
 
 # A = LongDNA{4}("CGG-G---")
 # B = LongDNA{4}("-ACCGCTG")
