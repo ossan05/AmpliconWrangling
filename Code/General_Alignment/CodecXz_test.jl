@@ -27,32 +27,46 @@ affine_score = 0.5
 matches = [Move(1, 0)]
 gaps = [Move(1, 2.0)]
 
-chain_rel_scores = Vector{Float64}()
-correlation_rel_scores = Vector{Float64}()
-old_rel_scores = Vector{Float64}()
-
-chain_misses = 0
-correlation_misses = 0
-old_misses = 0
-
-for i in 1 : 2
+bests = [0,0,0]
+sums = [0,0,0]
+n = 50
+times = [0.0, 0.0, 0.0]
+for i in 1 : n
     println("iteration ", i)
     A = rand(modSeqs)
-    typeof(A)
     B = rand(modSeqs)
+    time1 = time()
     corr = kmerMatching(A, B, match_score, mismatch_score, matches, gaps, gaps, affine_score, kmerLength)
-    chain = kmerChainMatching(A, B, match_score, mismatch_score, matches, gaps, gaps, kmerLength)
-    #old = kmer_seeded_align(SCring(A), String(B);wordlength = kmerLength, skip = Int64(kmerLength/3))
-    a = [corr, chain]#, old]
-    b = [0.0, 0.0]#, 0.0]
-    for j in axes(a)
+    time2 = time()
+    chain = kmerChainMatching(A, B, match_score, mismatch_score, matches, gaps, gaps, affine_score, kmerLength)
+    time3 = time()
+    old = kmer_seeded_align(String(A), String(B);wordlength = kmerLength, skip = Int64(kmerLength÷ 3))
+    time4 = time()
+    times .+= [time2-time1, time3-time2, time4-time3]
+    @show times ./ i
+
+    a = [corr, chain, old]
+    b = [0.0, 0.0, 0.0]
+    for j in eachindex(a)
         x = a[j]
-        @show typeof(x)
-        @show typeof(x[1])
-        b[j] = alignment_score(x[1], x[2], make_match_score_matrix(match_score, mismatch_score), matches, gaps, gaps)
+        b[j] = alignment_score(LongDNA{4}(x[1]), LongDNA{4}(x[2]), make_match_score_matrix(match_score, mismatch_score), matches, gaps, gaps, affine_score)
     end
-    println(b)
+    best = minimum(b)
+    for j in 1 : 3
+        if b[j] == best
+            bests[j] += 1
+        end
+    end
+    sums .+= b
+    @show bests
+    @show sums./ i
 end
+println("avrage correlation ", sums[1] ./ n)
+println("avrage chain       ", sums[2] ./ n)
+println("avrage old         ", sums[3] ./ n)
+println("bests correlation ", bests[1])
+println("bests chain       ", bests[2])
+println("bests old         ", bests[3])
 #A, B = kmerMatching(modSeqs[20], modSeqs[19], match_score, mismatch_score, matches, gaps, gaps, affine_score, kmerLength)
 #A, B = kmerChainMatching(modSeqs[20], modSeqs[19], match_score, mismatch_score, matches, gaps, gaps, kmerLength)
 #A, B = kmer_seeded_align(String(modSeqs[20]), String(modSeqs[19]);wordlength = kmerLength, skip = Int64(kmerLength/3))
