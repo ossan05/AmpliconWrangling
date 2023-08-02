@@ -238,9 +238,9 @@ function kmerMatching(A::LongDNA{2}, B::LongDNA{2}, match_score_matrix::Array{Fl
     return (result[1], result[2])
 end
 
-# #A = LongDNA{2}("ACGGTTAGCGCGCAAGGTCGATGTGTGTGTGTGTG")
-# #B = LongDNA{2}("TCGGTTACGCGCAAGGTCGATGAGTGTGTGTG")
-# A, B = generate_seq(3000)
+# A = LongDNA{2}("ACGGTTAGCGCGCAAGGTCGATGTGTGTGTGTGTG")
+# B = LongDNA{2}("TCGGTTACGCGCAAGGTCGATGAGTGTGTGTG")
+# #A, B = generate_seq(3000)
 
 # mismatch_score = 1.0
 # match_score = 0.0
